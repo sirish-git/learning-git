@@ -1,0 +1,189 @@
+
+
+learn VIM to become an expert:
+
+
+Insert mode
+ I - insert at start of the current cursor line
+ o - open up a new line below current cursor line
+ A - append text to the end of current cursor line
+
+
+Auto word suggestions:
+ ctrl + p : word filling from previous words
+ ctrl + n : word filling from next words 
+
+
+Search:
+ / - Forward search
+ ? - Backward search
+ * - Bounded search the word under the cursor
+ g* - Unbounded search of word under curson
+ /\<sting\> - to search the whole word string
+ /\cString - Search for a string, case insensitive
+ f - find a character in a line
+ t - 
+
+
+Search & Replace
+ :%s/old_word/new_word/g  - replaces all old_words with new_words
+ :%s/old_word/new_word/gc - asks for each word before replacing
+ :%s/old_word/new_word/gi - replaces all words without case sensitiv
+ 
+
+Moving
+ % - To move between matched braces, brackets, quotes, etc
+ >> - shift right in normal mode
+ << - shift left in normal mode
+ :20, 40> - shift right lines 20 to 40
+ #G - Type a number and then type G to that line number
+ gg - Move cursor to start of the file
+ G - Move cursor to end of file
+ 0 - Move cursor to begining of the line
+ $ - Move crusor to end of line
+ H - Move cursor to highest (top) line in screen
+ L - Move cursor to lowest (bottom) line in screen
+ w - Move forwarda word
+ b - Move back a word
+ :N - Enter number "N" to go to that line
+ ctrl+f - to move one page forward (down)
+ ctll+b - to move one page backward (up)
+ } - jump to next paragraph (or funtionc/block)
+ '. - go to previously modified line
+
+
+Copy, Paste & Delete
+ y - Copy (yank) the selected text
+ p - Paste at cursor
+ x - Cuts the selected text. Cuts the character under the cursor if no text is selected
+ r - Type r and then type another character to replace the character under the cursor
+ R - Begin overstrike or replace mode, use ESC key to exit
+ #yy - Type a number and then type yy to copy (yank) those many lines
+ C - Deletes from cursor till end of the line and starts insert mode
+ D - Deletes from cursor till end of the line
+
+Copy, Paste & Delete using named line buffers (character names a-z):
+ "ayy - copies a line in to buffer named a
+ "ap - pastes the contents of buffer a
+ "a2yy - copies 2 lines in to buffer named a
+ "b4dd - deletes 4 lines and contents are saved in buffer named b
+ "bp - copies the contents of buffer b
+
+
+Visual mode
+ v - Press v and move the cursor to select a section of text, works on characters
+ V - start visual mode linewise
+ ctrl+v - block wise visual mode
+ c - change the selected text
+ > - shift right the selected text
+ < - shift left the selected text
+
+Powerful visual selections
+ vi" - Selects everything inside the quotes where the cursor is in
+ va" - Selects everything inside inluding the quotes where the cursor is in
+ vi) - Selects everything inside the paranthesis where the cursor is in
+ v2i) - Selects everything inside the 2 paranthesis where the cursor is in
+
+
+Combining commands
+ dw - Deletes the next word
+ db - Deletes the previous word
+ dd - Deletes an entire line
+ d0 - Deletes from cursor till begining of the line
+ dG - Deletes from cursor till end of file
+ dL - Deletes all text below the cursor on screen
+ d/unicorn - After pressing Enter, deletes all text between the curson and the word "unicorn"
+ 3p - Pastes 3 times
+ ci" - Changes everything inside the double quotes in which cursor is in
+ di' - Deletes everything inside the single quotes in which cursor is in
+ yi) - yanks everything inside the paranthesis in which cursor is in
+
+
+Undo, Redo, Repeat
+ u - Undo
+ ctr+r - Redo
+ . - The "." repeats the last full command. The insert command also functions as command here.
+
+
+Set
+ :set hlsearch - highlights the searched words
+ :set incsearch - searching starts while entering the string
+ :set nu - enable the numbering in the file
+ :set ic - ignore case in searches
+ :set noic - considers case in searches
+ :set cmd1 cmd2 cmd3 - set multiple commands together with space
+
+
+File explorer
+ :Vexplore - list all files in current directory in vertical split
+ :e - To open an existing/new file, works from vim also
+ :e - To refresh a file opened in vim, but being edited elsewhere
+ gf - open file name under cursor
+ ctrl+w gf - open file under cursor in new tab
+ :sh - To open a bash session from vim to run external commands and return to vim editing session
+ :f - shows the file info, name, number of lines etc
+ :qa - quit all files opened
+ :w filename - save the contents in to a different file
+ vim -p file1 file2 - opens the files in multiple tabs
+ :cd .. - Move to parent directory
+ :args - list files
+ :grep expression *.php - Returns a list of .php files containing expression
+
+
+Tabs/Windows
+ :tabnew - creates a new tab
+ gt - show next tab
+ :tabfirst - show first tab
+ :sp - splits current window horizontally
+ :vsp - splits current window vertically
+ :vertical res -5 - to resize vertival buffer width by 5
+ :vertical res +10 - to resize vertival buffer width by 10
+ :#sp - splits current window horizontally and shows # lines to adjust height
+ :#vsp - split current window vertically and shows # characters to adjust width
+ ctrl+w+ctrl+w - press two times to switch between splits
+ vim -o file1 fileN - opens N files and place them in horizontal splits
+ vim -O file1 fileN - opens N files and place them in vertical splits
+
+
+Buffers
+ :ls - show current buffers
+ :bN - to switch to buffer number N
+ :bd - to delete a buffer
+ :bn - to go to the next buffer/file (can open multiple file names with vim)
+ :bp - to go to the previous buffer
+ :h buffer-list - to see various commands to manipulate multiple buffers
+ 
+
+Markers
+ mb - marks a line with name b
+ 'b - go to the marker line named b
+ mB - marks a line with name capital B, capital markers are global, allows to move acrross buffers ?
+ ]' - go to next lowercase mark
+
+
+Case
+ Vu - lowercase line
+ VU - Upper case line
+ g~~ - invert case
+
+
+Syntax highlighting
+ :syntax on - turn on syntax highlighting
+ :syntax off - turn off syntax hightlighting
+
+
+Move in time:
+ Earlier
+ Later
+
+
+Mislen and describe later
+ :nmap
+ :inoremap
+ :reg
+ :saveas
+ fold
+ vimdiff
+
+
+

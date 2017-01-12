@@ -1,0 +1,96 @@
+
+Python Programming
+
+Duration: 3 days
+ 
+Course Outline:
+ 
+Module 1
+ 
+·         Language Basics
+·         Language elements
+·         Native data types, primitives
+·         Types
+·         Numbers int long float complex
+·         Sequences str tuple list set
+·         Mappings dict
+·         Iterators iter
+·         Control flow
+·         if
+·         while for break continue
+·         Functions
+·         def statement
+·         __doc__ Function object
+·         __call__ Arguments
+·         return yield Generators
+ 
+Module 2:
+ 
+·         Scope
+·         global
+·         locals() globals()
+·         Closures
+·         Functional Programming
+·         Decorators
+·         Partial Functions
+·         Generators
+·         Generator Expressions
+·         Execution model
+·         Dynamic code evaluation exec eval
+·         Scope
+·         Modules
+·         .py, .pyc, .pyo
+·         import
+·         from…import
+ 
+Module 3:
+·         Packages
+·         __init__.py
+·         Builtin modules
+·         __builtin__ __main__
+·         Standard python library
+·         sys, os, distutils (quick introduction)
+·         Object Oriented Python
+·         class statement
+·         instance and classobj
+·         Inheritance
+ 
+Module 4:
+ 
+·         Exception Handling
+·         try … except else
+·         try … finally
+·         rise
+·         IO
+·         File IO
+·         String IO
+·         Subprocess and pipes
+·         User exceptions
+·         Content Management
+·         With statement
+ 
+Module 5:
+·         New-Style Classes
+·         Descriptors
+·         Slots
+·         Properties
+·         Static Methods
+·         Class Methods
+·         Meta Classes
+·         Python Debugger
+·         Logging
+·         Testing, Unit Testing, PyUnit
+ 
+Module 6:
+·         Text processing
+·         Glob, Regular expression
+·         pack, unpack
+·         Database programming
+ 
+Module7:
+·         Concurrency in Python
+·         Threading
+·         Multiprocessing
+·         Profiling
+·         Introduction to NumPy
+·         arrays, matrix, sorting, searching
