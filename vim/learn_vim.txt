@@ -58,7 +58,6 @@ Copy, Paste & Delete
  x - Cuts the selected text. Cuts the character under the cursor if no text is selected
  r - Type r and then type another character to replace the character under the cursor
  R - Begin overstrike or replace mode, use ESC key to exit
- #yy - Type a number and then type yy to copy (yank) those many lines
  C - Deletes from cursor till end of the line and starts insert mode
  D - Deletes from cursor till end of the line
 
@@ -89,13 +88,17 @@ Combining commands
  dw - Deletes the next word
  db - Deletes the previous word
  dd - Deletes an entire line
+ #yy - Type a number and then type yy to copy (yank) those many lines
+ #dd - Type a number and then type dd to delete those many line
+ #p - Type a number and then type p to pastes those many times
  d0 - Deletes from cursor till begining of the line
  dG - Deletes from cursor till end of file
  dL - Deletes all text below the cursor on screen
  d/unicorn - After pressing Enter, deletes all text between the curson and the word "unicorn"
- 3p - Pastes 3 times
- ci" - Changes everything inside the double quotes in which cursor is in
+ ci" - Deletes everything inside the double quotes in which cursor is in and places the curson
+ ca{ - Deletes everything inside including the braches in which curson is in and places the cursor
  di' - Deletes everything inside the single quotes in which cursor is in
+ da[ - Deletes everything inside including the brackets in which cursor is in
  yi) - yanks everything inside the paranthesis in which cursor is in
 
 
