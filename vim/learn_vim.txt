@@ -69,6 +69,17 @@ Copy, Paste & Delete using named line buffers (character names a-z):
  "bp - copies the contents of buffer b
 
 
+Command line mode comands (use after pressing : in vim)
+ :[range]delete[x] - deletes specified lines [into register x]
+     example usage- :2d - deletes contents in line number 2
+ :[range]yank[x] - yank specified line [into register x]
+     example usage- :45y - copies contents in line number 45
+ :[range]copy{address} - copy (t is shorthand for copy) the specified lines below the line specified by {address}, but doen't copy the contents in to register
+     example usage - :5,7t2 - copy 5 to 7 lines to 2 
+ :[range]move{address} - move the specified lines to below the line specified by {address}
+ :[range]put[x]
+
+
 Visual mode
  v - Press v and move the cursor to select a section of text, works on characters
  V - start visual mode line wise
