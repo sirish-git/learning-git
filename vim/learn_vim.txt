@@ -9,7 +9,7 @@ Insert mode
  A - append text to the end of current cursor line
 
 
-Auto word suggestions:
+Auto word suggestions (in Insert mode)
  ctrl + p : word filling from previous words
  ctrl + n : word filling from next words 
 
@@ -21,8 +21,9 @@ Search:
  g* - Unbounded search of word under cursor
  /\<sting\> - to search the whole word string
  /\cString - Search for a string, case insensitive
- f - find a character in a line
- t - 
+ f{char} - find a character in a line
+ ; - repeat the last character search command
+ , - reverse search the last character search command
 
 
 Search & Replace
@@ -31,11 +32,8 @@ Search & Replace
  :%s/old_word/new_word/gi - replaces all words without case sensitive
  
 
-Moving
+motions/movement
  % - To move between matched braces, brackets, quotes, etc
- >> - shift right in normal mode
- << - shift left in normal mode
- :20, 40> - shift right lines 20 to 40
  #G - Type a number and then type G to that line number
  gg - Move cursor to start of the file
  G - Move cursor to end of file
@@ -52,16 +50,26 @@ Moving
  '. - go to previously modified line
 
 
-Copy, Paste & Delete
- y - Copy (yank) the selected text
- p - Paste at cursor
+operator + motion = action
+ note: operator reach is specified by the motion to accomplish an action
+ y{motion} - copy (yank) the specified text
+ p{motion} - paste (put) at cursor
+ d{motion} - deletes the specified text and also copies in to register
+ ={motion} - auto indentation
+ >{motion} - shift right in normal mode
+ <{motion} - shift left in normal mode
+
+
+Copy, Paste, Delete
  x - Cuts the selected text. Cuts the character under the cursor if no text is selected
  r - Type r and then type another character to replace the character under the cursor
  R - Begin over strike or replace mode, use ESC key to exit
  C - Deletes from cursor till end of the line and starts insert mode
  D - Deletes from cursor till end of the line
 
-Copy, Paste & Delete using named line buffers (character names a-z):
+
+Registers: Copy, Delete, Paste using register names (character names a-z):
+ "Register_name{Operation} - if register name is not specified vim uses default unnamed register
  "ayy - copies a line in to buffer named a
  "ap - pastes the contents of buffer a
  "a2yy - copies 2 lines in to buffer named a
@@ -69,15 +77,35 @@ Copy, Paste & Delete using named line buffers (character names a-z):
  "bp - copies the contents of buffer b
 
 
-Command line mode comands (use after pressing : in vim)
+text objects
+ i - selects everything inside a delimiters
+     examples: i) i} i] i' i" i>
+     note: even using the other delimiter is equivalent, i.e., i) and i( are same
+ a - selects everything including the delimiters
+     examples: a) a} a] a' a" a>
+
+usage of text objects (works irrespective of the position of cursor)
+ yiw - copies a word irrespective of position of the cursor
+ ci" - Deletes everything inside the double quotes in which cursor is in and places the cursor
+ ca{ - Deletes everything inside including the braces in which cursor is in and places the cursor
+ di' - Deletes everything inside the single quotes in which cursor is in
+ da[ - Deletes everything inside including the brackets in which cursor is in
+ yi) - yanks everything inside the parenthesis in which cursor is in
+ dis - deletes current sentence
+ das - deletes current sentence plus one space
+ "ayis - copies the current sentence in to the register a
+
+
+Command line mode commands (use after pressing : in vim)
  :[range]delete[x] - deletes specified lines [into register x]
      example usage- :2d - deletes contents in line number 2
  :[range]yank[x] - yank specified line [into register x]
      example usage- :45y - copies contents in line number 45
- :[range]copy{address} - copy (t is shorthand for copy) the specified lines below the line specified by {address}, but doen't copy the contents in to register
+ :[range]copy{address} - copy (t is shorthand for copy) the specified lines below the line specified by {address}, but doesn't copy the contents in to register
      example usage - :5,7t2 - copy 5 to 7 lines to 2 
  :[range]move{address} - move the specified lines to below the line specified by {address}
  :[range]put[x]
+ :[range]>{address} - shift right 
 
 
 Visual mode
@@ -85,14 +113,16 @@ Visual mode
  V - start visual mode line wise
  ctrl+v - block wise visual mode
  c - change the selected text
+ gv - reselects last selected text in visual mode
  > - shift right the selected text
  < - shift left the selected text
 
-Powerful visual selections
+Powerful visual selections with text objects
  vi" - Selects everything inside the quotes where the cursor is in
  va" - Selects everything inside including the quotes where the cursor is in
  vi) - Selects everything inside the parenthesis where the cursor is in
  v2i) - Selects everything inside the 2 parenthesis where the cursor is in
+ vis - Selects everything inside the sentence.
 
 
 Combining commands
@@ -106,11 +136,6 @@ Combining commands
  dG - Deletes from cursor till end of file
  dL - Deletes all text below the cursor on screen
  d/unicorn - After pressing Enter, deletes all text between the cursor and the word "unicorn"
- ci" - Deletes everything inside the double quotes in which cursor is in and places the cursor
- ca{ - Deletes everything inside including the braces in which cursor is in and places the cursor
- di' - Deletes everything inside the single quotes in which cursor is in
- da[ - Deletes everything inside including the brackets in which cursor is in
- yi) - yanks everything inside the parenthesis in which cursor is in
 
 
 Undo, Redo, Repeat
@@ -139,7 +164,7 @@ Spell check
 
 
 File explorer
- :Vexplore - list all files in current directory in vertical split
+ :Vexplore or Ve - list all files in current directory in vertical split
  :e - To open an existing/new file, works from vim also
  :e - To refresh a file opened in vim, but being edited elsewhere
  gf - open file name under cursor
@@ -160,11 +185,14 @@ Tabs/Windows
  :tabfirst - show first tab
  :sp - splits current window horizontally
  :vsp - splits current window vertically
+ :res +N - to resizes horizontal split window height by N
  :vertical res -5 - to resize vertical buffer width by 5
  :vertical res +10 - to resize vertical buffer width by 10
  :#sp - splits current window horizontally and shows # lines to adjust height
  :#vsp - split current window vertically and shows # characters to adjust width
  ctrl+w+ctrl+w - press two times to switch between splits
+ ctrl+w l/k/j/h - press ctrl+w then press the direction keys to move to window in that direction
+ :cl - to close the active window
  vim -o file1 fileN - opens N files and place them in horizontal splits
  vim -O file1 fileN - opens N files and place them in vertical splits
 
