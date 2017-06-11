@@ -8,7 +8,7 @@ print 'python auto inserts new line'
 # prints in same line by using comma
 print "Can avoid default newline using",
 print 'the comma operator'
-print 'extra new line\n'
+print '\\n character to put extra new line\n'
 # use escape sequence 
 print 'print single \' quote with backspace'
 print "print single ' quote within double quotes"
@@ -16,14 +16,15 @@ print 'print backspace \\ using backspace character'
 # python puts space
 i=50
 print 'python space: i value is',i
-print 'inserts extra newline \n'
 
 
+# interpreter mode
 print 'enter interpreter mode by typing python on terminal'
 print 'exit interpreter mode by typing ctrl+d\n'
 
 
 # use format to print
+print "'' and \"\" quotes usage are same with strings"
 name = 'bond' # "" and '' are same in python string usage
 age = 25
 print '{0} is {1} years old'.format(name, age)
