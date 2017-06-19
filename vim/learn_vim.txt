@@ -125,7 +125,7 @@ Powerful visual selections with text objects
  vis - Selects everything inside the sentence.
 
 
-Combining commands
+Combining commands with motions
  dw - Deletes the next word
  db - Deletes the previous word
  dd - Deletes an entire line
@@ -136,6 +136,9 @@ Combining commands
  dG - Deletes from cursor till end of file
  dL - Deletes all text below the cursor on screen
  d/unicorn - After pressing Enter, deletes all text between the cursor and the word "unicorn"
+ >> - shift right in normal mode
+ << - shift left in normal mode
+ :20, 40> - shift right lines 20 to 40
 
 
 Undo, Redo, Repeat

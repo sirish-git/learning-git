@@ -1,4 +1,30 @@
 
+'''
+Naming convetions:
+ - Class names start with an uppercase letter
+ - Starting an identifier with a single leading underscore indicates that the identifier is private
+ - Starting an identifier with two leading underscores indicates a strongly private identifier
+ - If the identifier also ends with two trailing underscores, the identifier is a language-defined special name 
+'''
+
+'''
+Python keywords
+ and	exec	not
+ assert	finally	or
+ break	for	pass
+ class	from	print
+ continue	global	raise
+ def	if	return
+ del	import	try
+ elif	in	while
+ else	is	with
+ except	lambda	yield
+'''
+
+'''
+This is multiline comment
+'''
+
 # This is a python comment
 
 # print in python: prints on new lines
@@ -122,6 +148,21 @@ def fn_hello():
 
 print 'call fn_hello:'
 fn_hello()
+
+
+# main function
+print 'python does not require a main function to be created, it is better to create for clarity'
+print 'If every python file can have a function/main call'
+print 'but when this file imported as module these function calls also gets executed'
+print 'to avoid unnecessary execution of function calls in imported module we can create conditional function calls with __name__'
+# __name__ example
+def fn_name_example():
+ print 'welcome to function __name__ example'
+
+if __name__ == "__main__":
+ fn_name_example()
+ print 'name is set to __main__ when this file is directly executed, executed from imported file it is not set'
+print ''
 
 
 # global
