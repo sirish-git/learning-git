@@ -7,6 +7,7 @@
  - If the identifier also ends with two trailing underscores, the identifier is a language-defined special name 
 '''
 
+
 # Python keywords
 '''
  and		exec		not
@@ -21,12 +22,12 @@
  except		lambda		yield
 '''
 
+
 # multiline comment
 '''
 This is multiline comment
 using triple quotes
 '''
-
 # Multi-Line Statements
 '''
 Python allow the use of the line continuation character (\) to denote that the line should continue. For example 
@@ -82,11 +83,13 @@ print '{0:.3f}'.format(1.0/3)
 print
 
 
+
 # multiple logical statements in one physical line
 i = 5
 print 'i value is', i
 i=10; print 'multiple statements in single line using semicolon; i value is', i
 print
+
 
 
 # Python Strings
@@ -127,6 +130,7 @@ Normal strings in Python are stored internally as 8-bit ASCII, while Unicode str
 print u'Hello, world!\n'
 
 
+
 # Python Lists
 '''
 A list contains items separated by commas and enclosed within square brackets ([]). To some extent, lists are similar to arrays in C. One difference between them is that all the items belonging to a list can be of different data type.
@@ -163,6 +167,7 @@ list.append(obj), list.extern(obj)
 '''
 
 
+
 # Python Tuples
 '''
 A tuple is another sequence data type that is similar to the list. tuples are enclosed within parentheses. 
@@ -178,6 +183,7 @@ print tuple[1:3]      # Prints elements starting from 2nd till 3rd
 print tuple[2:]       # Prints elements starting from 3rd element
 print tinytuple * 2   # Prints list two times
 print tuple + tinytuple # Prints concatenated lists
+
 
 
 # Python Dictionary
@@ -267,6 +273,7 @@ print ''
 
 # break and continue operators used as C language
 print 'break and continue operator used as in C\n'
+
 
 
 # functions
@@ -535,6 +542,7 @@ with open("poem.txt") as f:
  for line in f:
  print line,
 '''
+
 
 
 
