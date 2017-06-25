@@ -262,7 +262,12 @@ print ''
 
 # for 
 # a for can have an optional else clause
-# range function generates sequence of numbers with step count 1
+# range function generates sequence of numbers
+'''
+syntax of range: range(start,stop,step)
+start is optional, if start is not specified starts from 0
+step is optional, default step is 1
+'''
 for i in range(0,5):
  print "iteration cnt:", i
 # step count 2
@@ -390,6 +395,120 @@ Then we can directly import the package/directory name (ex_dir) instead of indiv
 import ex_dir
 
 '''
+
+
+
+
+# Object oriented programming (oop)
+'''
+class attributes (fields and methods):
+Variables that belong to an object or class are referred to as fields. Objects can also have functionality by using functions that belong to a class. Such functions are called methods of the class. 
+ Collectively, the fields and methods can be referred to as the attributes of that class
+
+Fields are of two types - they can belong to each instance/object of the class or they can belong to the class itself. They are called instance variables and class variables respectively.
+'''
+
+'''
+self:
+Class methods have only one specific difference from ordinary functions , they must have an extra first name that has to be added to the beginning of the parameter list, but you do not give a value for this parameter when you call the method, Python will provide it. This particular variable refers to the object itself, and by convention, it is given the name self .
+
+We can use any name other than self, but better to use self.
+The self in Python is equivalent to the this pointer in C++
+'''
+print
+
+class Person:
+  def say_hi(self):
+    print('Hello, welcome to class and oop')
+
+p = Person()
+p.say_hi()
+print
+
+'''
+__init__
+The init method is run as soon as an object of a class is instantiated. The method is useful to do any initialization you want to do with your object. Notice the double underscores both at the beginning and at the end of the name
+'''
+class Person:
+  def __init__(self, name):
+# Note: self.name means that there is a field called "name" that is part of the object called "self" 
+    self.name = name
+
+  def say_hi(self):
+    print 'Hello, my name is', self.name
+
+p = Person('Swaroop')
+p.say_hi()
+print
+
+
+
+# All class members (including the data members) are public and all the methods are virtual in Python.
+
+# example: class fields/methods, instance/object fields/methods
+
+class Test_Class:
+
+ # class variable/field (can be accessed using class or object)
+ obj_cnt = 0
+
+ # default constructor
+ def __init__(self, name):
+  Test_Class.obj_cnt += 1
+  # object field (can be accessed using only objects)
+  self.name = name
+  self.val = 0
+  print 'Welcome to Test_Class: Object name ', self
+  print 'obj_cnt value: ', Test_Class.obj_cnt
+  
+
+ # object method (can be called using an object)
+ def obj_fn(self, val):
+  self.val += 1
+  self.sum = self.val + val
+  print 'Welcome to obj_fn: Object name ', self
+  print 'obj_fn counter (object value): ', self.val
+  print 'self.name: ', self.name, ', self.sum: ', self.sum
+
+
+ # class method using a below token @classmethod (can be called using Class, can alsom be called using oject)
+ @classmethod
+ def cls_fn(cls):
+  print 'Welcome to cls_fn (class function) created with @classmethod'
+  print 'objects cnt: ', Test_Class.obj_cnt
+  # can not access any object variables
+  # print 'val: ', cls.val
+
+
+ # static method using a bleow token @staticmethod (like a normal function does not take object, class as 1st arguments)
+ @staticmethod
+ def static_fn():
+  print 'Welcome to static_fn (static function) created with @staticmethod'
+  #print 'objects cnt: ', Test_Class.obj_cnt
+
+
+# create an object
+obj_1 = Test_Class('sirish')
+# call object function
+obj_1.obj_fn(24)
+# call class function with object
+obj_1.cls_fn()
+# call class function using class name
+Test_Class.cls_fn()
+# call static function using object
+obj_1.static_fn()
+# call static function using class
+Test_Class.static_fn()
+
+print
+# second object
+obj_2 = Test_Class('kumar')
+obj_2.obj_fn(99)
+obj_2.cls_fn()
+Test_Class.cls_fn()
+Test_Class.static_fn()
+
+print
 
 
 
@@ -524,7 +643,7 @@ except:
   print 'exception error: file opening error\n'
 
 
-#  Try … Finally
+#  Try  Finally
 '''
 Suppose you are reading a file in your program. How do you ensure that the file object
 is closed properly whether or not an exception was raised? This can be done using
