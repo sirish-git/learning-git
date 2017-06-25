@@ -12,6 +12,7 @@ print(x, y)
  
 x, y = y, x
 print(x, y),'\n'
+print
 
 
 # Storing Elements Of A List Into New Variables.
@@ -22,6 +23,7 @@ testList = [1,2,3]
 x, y, z = testList
  
 print(x, y, z),'\n'
+print
 
 
 
@@ -36,6 +38,10 @@ Syntax:
 x = 10 if (y == 9) else 20
 print x,'\n'
 
+numbers = [1,10,100,1000,10000]
+if [number for number in numbers if number < 10]:
+ print 'At least one element is over 10'
+print
 
 
 # List comprehension
@@ -44,6 +50,7 @@ We can even use a ternary operator with the list comprehension.
 '''
 auto_list = [m**2 if m > 5 else m**3 for m in range(10)]
 print "auto_list: \n", auto_list,'\n'
+print
 
 
 
@@ -56,7 +63,14 @@ testSet = {i * 2 for i in xrange(10)}
  
 print 'testSet ',(testSet)
 print 'testDict ',(testDict),'\n'
+print
 
+
+
+# variable comprehensions
+a, b, c = (2 * i + 1 for i in range(3))
+print a,b,c,'\n'
+print
 
 
 # Work With Multi-Line Strings
@@ -83,12 +97,14 @@ multiStr= ("multi row using "
 "double quotes "
 "enclosed in paranthesis")
 print multiStr,'\n'
+print
 
 
 
 # Print The File Path Of Imported Modules
 import test_module
 print test_module,'\n'
+print
 
 
 
@@ -108,6 +124,7 @@ We can inspect objects in Python by calling the dir() method.
 '''
 test = [1, 3, 5, 7]
 print( dir(test) ),'\n'
+print
 
 
 
@@ -120,10 +137,13 @@ if m in [1,3,5,7]: instead of if m==1 or m==3 or m==5 or m==7:
 
 
 # Reverse A List Using Slicing
-test = [1,2,3,4]
+test = [1,2,3,4,5,6]
 rev = test[::-1]
+rev1 = test[::-2]
 print test
-print rev,'\n'
+print rev
+print rev1,'\n'
+print
 
 
 
@@ -155,6 +175,7 @@ print(Shapes.Circle)
 print(Shapes.Square)
 print(Shapes.Triangle)
 print(Shapes.Quadrangle),'\n'
+print
 
 
 
@@ -166,6 +187,7 @@ def x():
 a, b, c, d = x()
  
 print(a, b, c, d),'\n'
+print
 
 
 
@@ -183,6 +205,33 @@ testList = [10, 20, 30]
 test(*testDict)
 test(**testDict)
 test(*testList)
+
+
+
+
+# NumPy array library
+'''
+Numpy is the core library for scientific computing in Python.
+NumPy is a library for the Python programming language, adding support for large, multi dimensional arrays and matrices, along with a large collection of high level mathematical functions to operate on these arrays. 
+'''
+
+
+
+# Permutations (itertools.permutations)
+
+
+
+
+
+# Start a static HTTP server in any directory
+
+
+
+
+
+# Use C-Style Braces Instead of Indentation to Denote Scopes
+''' from __future__ import braces '''
+
 
 
 
