@@ -1,0 +1,31 @@
+
+ Usefull linux commands and hacks
+
+
+ Ctrl+R: To search command history try Ctrl-R(recursive search) and then type a subset of characters in your command
+ 
+ clear or ctrl+l: clear terminal by typing clear command or press ctrl+l
+
+ whoami: to know the who is user logged in as
+
+ pwd: to know the present working directory
+
+ 
+ Change directory:
+ 
+ cd/ : to move to root directory
+ cd~ : to move to our home directory 
+ cd- : to go to previously visited directory
+
+
+ view files:
+
+ cat : displays contents of a file and scrolls full contents
+ more : displays first page of the content which can fit it in the screen
+
+
+ Processes:
+
+ ps aux : to see all the process running on the system (a: all processes, u: user process, x:not related to terminal)
+ top : lists the top processes which uses most resources
+ kill PID : to kill a process mention corresponding process id (PID)
