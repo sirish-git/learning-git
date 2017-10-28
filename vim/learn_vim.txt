@@ -34,7 +34,8 @@ Search & Replace
 
 motions/movement
  % - To move between matched braces, brackets, quotes, etc
- #G - Type a number and then type G to that line number
+ NG - Type a number and then type G to that line number
+ :N - Enter number "N" to go to that line
  gg - Move cursor to start of the file
  G - Move cursor to end of file
  0 - Move cursor to beginning of the line
@@ -43,7 +44,6 @@ motions/movement
  L - Move cursor to lowest (bottom) line in screen
  w - Move forward word
  b - Move back a word
- :N - Enter number "N" to go to that line
  ctrl+f - to move one page forward (down)
  ctll+b - to move one page backward (up)
  } - jump to next paragraph (or function/block)
@@ -58,6 +58,23 @@ operator + motion = action
  ={motion} - auto indentation
  >{motion} - shift right in normal mode
  <{motion} - shift left in normal mode
+
+
+Combining commands with motions
+ dw - Deletes the word from current cursor position till the end
+ yw - Copies the word from current cursor position till the end
+ db - Deletes the word from current cursor position till the start
+ dd - Deletes an entire line
+ Nyy - Type a number N and then type yy to copy (yank) those many lines
+ Ndd - Type a number N and then type dd to delete those many line
+ Np - Type a number N and then type p to pastes those many times
+ d0 - Deletes from cursor till beginning of the line
+ dG - Deletes from cursor till end of file
+ dL - Deletes all text below the cursor on screen
+ d/unicorn - After pressing Enter, deletes all text between the cursor and the word "unicorn"
+ >> - shift right in normal mode
+ << - shift left in normal mode
+ :20, 40> - shift right lines 20 to 40
 
 
 Copy, Paste, Delete
@@ -125,22 +142,6 @@ Powerful visual selections with text objects
  vis - Selects everything inside the sentence.
 
 
-Combining commands with motions
- dw - Deletes the next word
- db - Deletes the previous word
- dd - Deletes an entire line
- #yy - Type a number and then type yy to copy (yank) those many lines
- #dd - Type a number and then type dd to delete those many line
- #p - Type a number and then type p to pastes those many times
- d0 - Deletes from cursor till beginning of the line
- dG - Deletes from cursor till end of file
- dL - Deletes all text below the cursor on screen
- d/unicorn - After pressing Enter, deletes all text between the cursor and the word "unicorn"
- >> - shift right in normal mode
- << - shift left in normal mode
- :20, 40> - shift right lines 20 to 40
-
-
 Undo, Redo, Repeat
  u - Undo
  ctr+r - Redo
@@ -191,8 +192,8 @@ Tabs/Windows
  :res +N - to resizes horizontal split window height by N
  :vertical res -5 - to resize vertical buffer width by 5
  :vertical res +10 - to resize vertical buffer width by 10
- :#sp - splits current window horizontally and shows # lines to adjust height
- :#vsp - split current window vertically and shows # characters to adjust width
+ :Nsp - splits current window horizontally and shows N lines to adjust height
+ :Nvsp - split current window vertically and shows N characters to adjust width
  ctrl+w+ctrl+w - press two times to switch between splits
  ctrl+w l/k/j/h - press ctrl+w then press the direction keys to move to window in that direction
  :cl - to close the active window
@@ -215,9 +216,9 @@ Markers
  mB - marks a line with name capital B, capital markers are global, allows to move across buffers ?
  ]' - go to next lowercase mark
  [' - go to previous lowercase mark
-
-
-Case
+ :marks - show all markers
+ :delm X - delete a bookmark 'X'
+ :delm! - delete all bookmark
  Vu - lowercase line
  VU - Upper case line
  g~~ - invert case
