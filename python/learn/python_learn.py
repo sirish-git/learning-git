@@ -22,6 +22,81 @@
  except		lambda		yield
 '''
 
+# Python membership operators
+'''
+Python’s membership operators test for membership in a sequence, such as strings, lists, or tuples. There are two membership operators
+'''
+# in
+'''
+Evaluates to true if it finds a variable in the specified sequence and false otherwise.
+'''
+# example
+ls = [1, 'test', 4, 9]
+'test' in ls
+4 in ls
+# not in
+'''
+Evaluates to true if it does not finds a variable in the specified sequence and false otherwise.
+'''
+
+# Python Identity Operators
+'''
+Identity operators compare the memory locations of two objects. There are two Identity operators explained below
+'''
+# is
+'''
+Evaluates to true if the variables on either side of the operator point to the same object and false otherwise.
+'''
+# example
+x=2; y=2
+x is y
+# is not
+'''
+Evaluates to false if the variables on either side of the operator point to the same object and true otherwise.
+'''
+
+
+# built-in functions 
+# dir([object]):
+'''
+Without arguments, return the list of names in the current local scope. With an argument, attempt to return a list of valid attributes for that object.
+'''
+
+# enumerate(iterable, start=0)
+'''
+Return an enumerate object. iterable must be a sequence,
+'''
+# example
+lst = [1, 'hi', 4]
+for idx, ls in enumerate(lst):
+ print (idx, ls)
+
+# help([object])
+'''
+Invoke the built-in help system. If no argument is given, the interactive help system starts on the interpreter console. If the argument is a string, then the string is looked up as the name of a module, function, class, method, keyword, or documentation topic, and a help page is printed on the console.
+'''
+
+# id(object)
+'''
+Return the “identity” of an object. This is an integer which is guaranteed to be unique and constant for this object during its lifetime.
+'''
+
+# input([prompt])
+'''
+If the prompt argument is present, it is written to standard output without a trailing newline. The function then reads a line from input, converts it to a string (stripping a trailing newline), and returns that. When EOF is read, EOFError is raised.
+'''
+
+# open
+'''
+open(file, mode=’r’, buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None)
+'''
+
+# sorted
+'''
+sorted(iterable[, key][, reverse])
+Return a new sorted list from the items in iterable.
+'''
+
 
 # multiline comment
 '''
@@ -58,12 +133,18 @@ print '\\n character to put extra new line\n'
 print 'print single \' quote with backspace'
 print "print single ' quote within double quotes"
 print 'print backspace \\ using backspace character'
+print "'' and \"\" quotes usage are same with strings" # "" and '' are same in python string usage
 # python puts space
 i=50
 print 'python space: i value is',i
 # strings can be added in print also
 str1 = 'in print also'
 print 'strings ' + 'can be added ' + str1
+# print as function
+val = 3
+print ("%10d" %(val))
+# print - 10 times
+print ("-" * 10
 
 
 # interpreter mode
@@ -72,8 +153,7 @@ print 'exit interpreter mode by typing ctrl+d\n'
 
 
 # use format to print
-print "'' and \"\" quotes usage are same with strings"
-name = 'bond' # "" and '' are same in python string usage
+name = 'bond' 
 age = 25
 print '{0} is {1} years old'.format(name, age)
 # use format without index
@@ -81,7 +161,6 @@ print '{} is {} years old: without index'.format(name, age)
 # use format for a different format specifier
 print '{0:.3f}'.format(1.0/3)
 print
-
 
 
 # multiple logical statements in one physical line
@@ -116,6 +195,12 @@ s = a + b
 print '+ operator on strings concatenates the result'
 print 'i+am=', s
 print
+
+# concat strings using format
+str2 = 'strings'
+str3 = 'can be added'
+str4 = '{} {} using format'.format(str2, str3)
+print str4
 
 # * operator
 a = 'am'
@@ -275,6 +360,9 @@ for i in range(0,5,2):
     print 'step 2: iteration cnt:', i
 print ''
 
+# range function generates sequence of numbers range(start, end, offset)
+print "range syntax"
+range(1,5,2)
 
 # break and continue operators used as C language
 print 'break and continue operator used as in C\n'
@@ -480,7 +568,7 @@ class Test_Class:
   # print 'val: ', cls.val
 
 
- # static method using a bleow token @staticmethod (like a normal function does not take object, class as 1st arguments)
+ # static method using a below token @staticmethod (like a normal function does not take object, class as 1st arguments)
  @staticmethod
  def static_fn():
   print 'Welcome to static_fn (static function) created with @staticmethod'
@@ -522,17 +610,16 @@ raw_input
 input
 '''
 
-# The raw_input Function
-'''
-The raw_input([prompt]) function reads one line from standard input and returns it as a string (removing the trailing newline).
-'''
-#example
-str = raw_input("Enter your input: ");
-print "Received input is : ", str
-
 # The input Function
 '''
 The input([prompt]) function is equivalent to raw_input, except that it assumes the input is a valid Python expression and returns the evaluated result to you.
+'''
+val = open("enter value: ")
+print val
+
+# The raw_input Function: obsolete in python 3.x onwards
+'''
+The raw_input([prompt]) function reads one line from standard input and returns it as a string (removing the trailing newline).
 '''
 
 # Opening and Closing Files

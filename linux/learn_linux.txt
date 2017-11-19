@@ -2,8 +2,8 @@
  Usefull linux commands and hacks
 
 
- Ctrl+R : To search command history try Ctrl-R(recursive search) and then type a subset of characters in your command
- history : To see the history of typed commands
+ Ctrl+R : To search command history try Ctrl-R(recursive search) and then type a subset of characters in your command. Enter to execute command and left/right arrows to select it to edit.
+ history : To see the history of typed commands. type !<id> to execute particular command from history.
  
  clear or ctrl+l: clear terminal by typing clear command or press ctrl+l
 
