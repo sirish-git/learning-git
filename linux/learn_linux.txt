@@ -2,9 +2,18 @@
  Usefull linux commands and hacks
 
 
+ Search history:
  Ctrl+R : To search command history try Ctrl-R(recursive search) and then type a subset of characters in your command. Enter to execute command and left/right arrows to select it to edit.
  history : To see the history of typed commands. type !<id> to execute particular command from history.
  
+ search for commands:
+ appropos text: this commands searchs for available commands/actions matches with given text
+
+ Alias:
+ alias: is a built in shell command that lets you assign name for a long command or frequently used command.
+ example (l as alias for ls -a): l=ls -a 
+ unalias: is unalias the given name (example: unalias l)
+
  clear or ctrl+l: clear terminal by typing clear command or press ctrl+l
 
  whoami : to know the who is user logged in as
@@ -33,3 +42,5 @@
 
 
  df -h : displays the disk space usage in human readable format
+
+ w: it is a combination of uptime + who commands show who worked on the system
