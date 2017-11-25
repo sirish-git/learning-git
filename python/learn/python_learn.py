@@ -566,7 +566,7 @@ class Test_Class:
   print 'self.name: ', self.name, ', self.sum: ', self.sum
 
 
- # class method using a below token @classmethod (can be called using Class, can alsom be called using oject)
+ # class method using a below token @classmethod (can be called using Class, can also be called using object)
  @classmethod
  def cls_fn(cls):
   print 'Welcome to cls_fn (class function) created with @classmethod'
