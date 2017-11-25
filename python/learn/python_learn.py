@@ -1,4 +1,9 @@
 
+# interpreter mode
+print 'enter interpreter mode by typing python on terminal'
+print 'exit interpreter mode by typing ctrl+d\n'
+
+
 # Naming convetions:
 '''
  - Class names start with an uppercase letter
@@ -34,6 +39,7 @@ Evaluates to true if it finds a variable in the specified sequence and false oth
 ls = [1, 'test', 4, 9]
 'test' in ls
 4 in ls
+
 # not in
 '''
 Evaluates to true if it does not finds a variable in the specified sequence and false otherwise.
@@ -50,6 +56,7 @@ Evaluates to true if the variables on either side of the operator point to the s
 # example
 x=2; y=2
 x is y
+
 # is not
 '''
 Evaluates to false if the variables on either side of the operator point to the same object and true otherwise.
@@ -103,6 +110,7 @@ Return a new sorted list from the items in iterable.
 This is multiline comment
 using triple quotes
 '''
+
 # Multi-Line Statements
 '''
 Python allow the use of the line continuation character (\) to denote that the line should continue. For example 
@@ -145,11 +153,6 @@ val = 3
 print ("%10d" %(val))
 # print - 10 times
 print ("-" * 10
-
-
-# interpreter mode
-print 'enter interpreter mode by typing python on terminal'
-print 'exit interpreter mode by typing ctrl+d\n'
 
 
 # use format to print
@@ -288,6 +291,10 @@ print dict[2]           # Prints value for 2 key
 print tinydict          # Prints complete dictionary
 print tinydict.keys()   # Prints all the keys
 print tinydict.values() # Prints all the values
+
+# loop for dictionary
+for key, value in dict.items():
+  print key, value
 
 #built-in methods
 '''
