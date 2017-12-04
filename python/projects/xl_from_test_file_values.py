@@ -1,4 +1,5 @@
 
+# number of elements
 COUNT_AVG = 3
 
 
@@ -13,21 +14,19 @@ import xlsxwriter
 workbook = xlsxwriter.Workbook('xl_report.xlsx')
 # create a worksheet
 worksheet = workbook.add_worksheet('report')
+worksheet.set_default_row(20)
+# create a worksheet
+worksheet2 = workbook.add_worksheet('data')
+worksheet2.set_default_row(20)
 # define column width
-worksheet.set_column(col, col, 20)
-worksheet.set_column(col+1, col+2, 8)
+worksheet.set_column(col, col, 40)
+worksheet.set_column(col+1, col+2, 16)
 
 # define format
-format_bold = workbook.add_format(
- { 
-#  'align': True,
-  'bold': True,
-  'border': 2,
-  'font_size': 18,
- }
-)
+format_title = workbook.add_format({'align': 'Center', 'border': 2,'font_size': 16, 'bold': True, })
+format_normal = workbook.add_format({'align': 'Center', 'border': 2,'font_size': 16, })
 # write title list
-worksheet.write(row, col, 'titles', format_bold)
+worksheet.write(row, col, 'titles', format_title)
 
 
 # find the values from file and find average
