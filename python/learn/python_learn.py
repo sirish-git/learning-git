@@ -298,7 +298,7 @@ for key, value in dict.items():
 
 #built-in methods
 '''
-dict.keys(), dict.items()
+dict.keys(), dict.values(), dict.items()
 '''
 
 
@@ -397,7 +397,7 @@ def fn_name_example():
 
 if __name__ == "__main__":
  fn_name_example()
- print 'name is set to __main__ when this file is directly executed, executed from imported file it is not set'
+ print 'name is set to __main__ when this file is directly executed, it is not when executed from imported file'
 print ''
 
 
