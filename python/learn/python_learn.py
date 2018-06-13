@@ -180,7 +180,7 @@ Python allows for either pairs of single or double quotes. Subsets of strings ca
 
 The plus (+) sign is the string concatenation operator and the asterisk (*) is the repetition operator
 '''
-#examples
+# examples
 str = 'Hello World!'
 
 print str          # Prints complete string
@@ -214,7 +214,7 @@ print
 '''
 Normal strings in Python are stored internally as 8-bit ASCII, while Unicode strings are stored as 16-bit Unicode. This allows for a more varied set of characters, including special characters from most languages in the world.
 '''
-#examples
+# examples
 print u'Hello, world!\n'
 
 
@@ -223,7 +223,7 @@ print u'Hello, world!\n'
 '''
 A list contains items separated by commas and enclosed within square brackets ([]). To some extent, lists are similar to arrays in C. One difference between them is that all the items belonging to a list can be of different data type.
 '''
-#examples
+# examples
 list = [ 'abcd', 786 , 2.23, 'john', 70.2 ]
 tinylist = [123, 'john']
 
@@ -245,14 +245,35 @@ print list1
 print
 
 # Built-in List Functions & Methods:
-#funcitons
+#help: get help using method name
+print(help(list.append))
+# funcitons
 '''
-len(list), cmp(list), max(list)
+len(list), cmp(list), max(list), sum(list), sorted(list)
 '''
-#methods
+# methods
 '''
 list.append(obj), list.extern(obj)
 '''
+# join method
+'''
+method join() returns a string in which the string elements of sequence have been joined by str separator
+syntax: str.join(sequence)
+'''
+# ex
+ls = ['hi', 'how', 'are', 'you']
+str1 = ' - '.join(ls)
+print(str1)
+
+# split method
+'''
+method split() returns a list of all the words in the string, using str as the separator (splits on all whitespace if left unspecified), 
+optionally limiting the number of splits to num
+syntax: str.split(str="", num=string.count(str))
+'''
+# ex
+ls_new = str1.split(' - ')
+print(ls_new)
 
 
 
@@ -261,7 +282,7 @@ list.append(obj), list.extern(obj)
 A tuple is another sequence data type that is similar to the list. tuples are enclosed within parentheses. 
 The main differences between lists and tuples are: Lists are enclosed in brackets ( [ ] ) and their elements and size can be changed, while tuples are enclosed in parentheses ( ( ) ) and cannot be updated. Tuples can be thought of as read-only lists
 '''
-#examples
+# examples
 tuple = ( 'abcd', 786 , 2.23, 'john', 70.2  )
 tinytuple = (123, 'john')
 
@@ -279,7 +300,7 @@ print tuple + tinytuple # Prints concatenated lists
 Python's dictionaries are kind of hash table type. A dictionary key can be almost any Python type, but are usually numbers or strings. Values, on the other hand, can be any arbitrary Python object.
 Dictionaries are enclosed by curly braces ({ }) and values can be assigned and accessed using square braces ([]).
 '''
-#examples
+# examples
 dict = {}
 dict['one'] = "This is one"
 dict[2]     = "This is two"
@@ -296,10 +317,18 @@ print tinydict.values() # Prints all the values
 for key, value in dict.items():
   print key, value
 
-#built-in methods
+# built-in methods
 '''
 dict.keys(), dict.values(), dict.items()
 '''
+
+# example: empty list, tuple, set, dict creations
+ls = []
+ls = list() # same as above
+tp = ()
+tp = tuple() # same as above
+dc = {} # create empty dicitonary
+st = set() # create empty set
 
 
 # Data Type Conversion
@@ -330,13 +359,13 @@ if val == 1:
     # end of block
 
 if val == 1:
-    #true block
+    # true block
     val = 3
 elif val == 3:
-    #else if block
+    # else if block
     val = 4
 else:
-    #new block
+    # new block
     print 'else block'
 print ''
 
@@ -470,7 +499,7 @@ print 'value from module', val_mod
 '''
 The dir() built-in function returns a sorted list of strings containing the names defined by a module.
 '''
-#examples
+# examples
 print 'sorted list of strings of names defined by test_module\n'
 content = dir(test_module)
 print content
@@ -483,7 +512,7 @@ A package is a hierarchical file directory structure that defines a single Pytho
 Packages are just folders of modules with a special init.py file that indicates to
 Python that this folder is special because it contains Python modules
 '''
-#example
+# example
 '''
 To make all of your functions available when you've imported a directory (ex_dir) as a package, you need to put explicit import statements in __init__.py as follows
 Then we can directly import the package/directory name (ex_dir) instead of individual modules
@@ -652,7 +681,7 @@ file.name	Returns name of the file.
 file.softspace	Returns false if space explicitly required with print, true otherwise.
 '''
 
-#example
+# example
 fo = open("foo.txt", "wb")
 print "Name of the file: ", fo.name
 print "Closed or not : ", fo.closed
@@ -687,8 +716,8 @@ rename, remove methods
 '''
 You can use the mkdir() method of the os module to create directories in the current directory.
 '''
-#example
-#os.mkdir("newdir")
+# example
+# os.mkdir("newdir")
 
 # The chdir() Method
 '''
@@ -737,7 +766,7 @@ except:
   print 'exception error: file opening error\n'
 
 
-#  Try  Finally
+# Try  Finally
 '''
 Suppose you are reading a file in your program. How do you ensure that the file object
 is closed properly whether or not an exception was raised? This can be done using
