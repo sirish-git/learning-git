@@ -245,7 +245,7 @@ print list1
 print
 
 # Built-in List Functions & Methods:
-#help: get help using method name
+# help: get help using method name
 print(help(list.append))
 # funcitons
 '''
@@ -761,6 +761,15 @@ else:
 '''
 # example
 try:
+   If there is ExceptionI, then execute this block.
+except ExceptionII:
+   If there is ExceptionII, then execute this block.
+   ......................
+else:
+   If there is no exception then execute this block. 
+'''
+# example
+try:
   fo = open("for.txt", "rb")
 except:
   print 'exception error: file opening error\n'
@@ -779,12 +788,3 @@ the finally block.
 Acquiring a resource in the try block and subsequently releasing the resource in the
 finally block is a common pattern. Hence, there is also a with statement that
 enables this to be done in a clean manner:
-
-with open("poem.txt") as f:
- for line in f:
- print line,
-'''
-
-
-
-
