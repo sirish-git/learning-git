@@ -567,7 +567,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
                     util.get_now_date(), "{:,}".format(self.step), psnr, ssim,
                     self.training_loss_sum / self.training_step)
             else:
-                line_a = "%s Step:%s PSNR:%f SSIM:%f (Training PSNR:%0.3f)" % (
+                line_a = "%s Step:%s PSNR:%f SSIM:%f (Avg. Train PSNR:%0.3f)" % (
                     util.get_now_date(), "{:,}".format(self.step), psnr, ssim,
                     self.training_psnr_sum / self.training_step)
             estimated = processing_time * (self.total_epochs - self.epochs_completed) * (
