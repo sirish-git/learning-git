@@ -75,17 +75,26 @@ def train(model, flags, trial):
     model.print_status(psnr, ssim, log=True)
     model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=True)
 
+    psnr_bic = {}
+    ssim_bic = {}
+    test_set_files = {}    
     if FLAGS.eval_tests_while_train:
-        print("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))
-        test_set_files = {}
+        print("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))        
         for test_set in FLAGS.eval_tests_while_train:
             #print("test_set: {}".format(test_set))        
             test_files = util.get_files_in_directory(flags.data_dir + "/" + test_set)
             test_set_files[test_set] = test_files
             
-            #psnr1, ssim1 = model.evaluate(test_set_files[test_set])
-            #print_line = "{:10s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1) 
-            #print(print_line)  
+            # bicubic evaluation
+            #total_psnr, total_ssim = evaluate.evaluate_bicubic(model, test_set)
+            # store
+            #psnr_bic[test_set] = total_psnr
+            #ssim_bic[test_set] = total_ssim
+            
+            # dummy model evaluation
+            psnr1, ssim1 = model.evaluate(test_set_files[test_set])
+            #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
+            print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
             
     while model.lr > flags.end_lr:
 
@@ -101,11 +110,8 @@ def train(model, flags, trial):
             if FLAGS.eval_tests_while_train:
                 for test_set in FLAGS.eval_tests_while_train:
                     psnr1, ssim1 = model.evaluate(test_set_files[test_set])
-                    print_line = "{:10s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1) 
-                if log:
-                    logging.info(print_line)
-                else:
-                    print(print_line)                    
+                    #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
+                    print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
                 
             model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=model_updated)
             model.save_model(trial=trial, output_log=False)

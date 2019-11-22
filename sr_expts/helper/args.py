@@ -63,9 +63,10 @@ flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current l
                                    "value, then training will be finished.")
 
 # Dataset or Others
-flags.DEFINE_string("dataset", "bsd200", "Training dataset dir. [yang91, general100, bsd200, other]")
+flags.DEFINE_string("dataset", "bsd200", "Training dataset dir. [DIV2K_train_HR, yang91, general100, bsd200, other]")
 flags.DEFINE_string("test_dataset", "set5", "Directory for test dataset [set5, set14, bsd100, urban100, all]")
-flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, Directory for test dataset [set5, set14, bsd100, urban100, all]")
+flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, each string should be ',' separated," 
+                                                "Directory for test dataset [set5, set14, bsd100, urban100, all]")
 flags.DEFINE_integer("tests", 1, "Number of training sets")
 flags.DEFINE_boolean("do_benchmark", False, "Evaluate the performance for set5, set14 and bsd100 after the training.")
 
