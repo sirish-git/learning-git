@@ -27,10 +27,12 @@ def build_image_set(file_path, channels=1, scale=1, convert_ycbcr=True, resampli
     if channels == 1 and true_image.shape[2] == 3 and convert_ycbcr:
         true_image = util.convert_rgb_to_y(true_image)
 
-    input_image = util.resize_image_by_pil(true_image, 1.0 / scale, resampling_method=resampling_method)
-    input_interpolated_image = util.resize_image_by_pil(input_image, scale, resampling_method=resampling_method)
+    # Avoid creating input, bicubic images, as they can be created from true image while training
+    #input_image = util.resize_image_by_pil(true_image, 1.0 / scale, resampling_method=resampling_method)
+    #input_interpolated_image = util.resize_image_by_pil(input_image, scale, resampling_method=resampling_method)
 
-    return input_image, input_interpolated_image, true_image
+    #return input_image, input_interpolated_image, true_image
+    return true_image, true_image, true_image
 
 
 def load_input_image(filename, width=0, height=0, channels=1, scale=1, alignment=0, convert_ycbcr=True,
@@ -89,12 +91,19 @@ class BatchDataSets:
         filenames = util.get_files_in_directory(data_dir)
         images_count = 0
 
-        util.make_dir(self.batch_dir)
-        util.clean_dir(self.batch_dir)
-        util.make_dir(self.batch_dir + "/" + INPUT_IMAGE_DIR)
-        util.make_dir(self.batch_dir + "/" + INTERPOLATED_IMAGE_DIR)
-        util.make_dir(self.batch_dir + "/" + TRUE_IMAGE_DIR)
+        #util.make_dir(self.batch_dir)
+        #util.clean_dir(self.batch_dir)
+        #util.make_dir(self.batch_dir + "/" + INPUT_IMAGE_DIR)
+        #util.make_dir(self.batch_dir + "/" + INTERPOLATED_IMAGE_DIR)
+        #util.make_dir(self.batch_dir + "/" + TRUE_IMAGE_DIR)
 
+        #self.true_images = []
+        patch_cnt = 150000
+        print("Allocated patches: {}".format(patch_cnt))
+        self.true_images = np.zeros(
+            shape=[patch_cnt, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
+            dtype=np.uint8)
+            
         processed_images = 0
         for filename in filenames:
             output_window_size = self.batch_image_size * self.scale
@@ -105,30 +114,42 @@ class BatchDataSets:
                                 scale=self.scale, print_console=False)
 
             # split into batch images
-            input_batch_images = util.get_split_images(input_image, self.batch_image_size, stride=self.stride)
-            input_interpolated_batch_images = util.get_split_images(input_interpolated_image, output_window_size,
-                                                                    stride=output_window_stride)
-
-            if input_batch_images is None or input_interpolated_batch_images is None:
+            # Avoid creating input, bicubic images, as they can be created from true image while training            
+            #input_batch_images = util.get_split_images(input_image, self.batch_image_size, stride=self.stride)
+            #input_interpolated_batch_images = util.get_split_images(input_interpolated_image, output_window_size,
+            #                                                        stride=output_window_stride)
+            #if input_batch_images is None or input_interpolated_batch_images is None:
                 # if the original image size * scale is less than batch image size
-                continue
-            input_count = input_batch_images.shape[0]
+            #    continue
+            #input_count = input_batch_images.shape[0]
 
             true_batch_images = util.get_split_images(true_image, output_window_size, stride=output_window_stride)
+            if true_batch_images is None:
+                # if the original image size * scale is less than batch image size
+                continue
+            input_count = true_batch_images.shape[0]
+            #self.true_images.append(true_batch_images)
 
             for i in range(input_count):
-                self.save_input_batch_image(images_count, input_batch_images[i])
-                self.save_interpolated_batch_image(images_count, input_interpolated_batch_images[i])
-                self.save_true_batch_image(images_count, true_batch_images[i])
+            #    #self.save_input_batch_image(images_count, input_batch_images[i])
+            #    #self.save_interpolated_batch_image(images_count, input_interpolated_batch_images[i])
+            #    self.save_true_batch_image(images_count, true_batch_images[i])
+                self.true_images[images_count] = true_batch_images[i]
                 images_count += 1
+
+            if images_count > (patch_cnt - 5000):
+                print(" ### Stopping patch process: Increase patches count/memory to process remaining patches also")                
+                break
+                
             processed_images += 1
             if processed_images % 10 == 0:
                 print('.', end='', flush=True)
 
-        print("Finished")
+        print("Finished batch creation.")
+        print(" --- processed images: ", processed_images)        
         self.count = images_count
 
-        print("%d mini-batch images are built(saved)." % images_count)
+        print("%d mini-batch images are built(saved).\n" % images_count)
 
         config = configparser.ConfigParser()
         config.add_section("batch")
@@ -193,6 +214,7 @@ class BatchDataSets:
             del self.true_images
         self.true_images = None
 
+    # verify already created batch has same properties as batch requested in current training instance
     def is_batch_exist(self):
         if not os.path.isdir(self.batch_dir):
             return False
@@ -246,7 +268,11 @@ class BatchDataSets:
 
         number = self.get_next_image_no()
         if max_value == 255:
-            return self.input_images[number], self.input_interpolated_images[number], self.true_images[number]
+            true_image = self.true_images[number]
+            # create input, bicubic images from true image
+            input_image = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
+            input_interpolated_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)        
+            return input_image, input_interpolated_image, true_image
         else:
             scale = max_value / 255.0
             return np.multiply(self.input_images[number], scale), \
@@ -286,7 +312,7 @@ class DynamicDataSets:
         self.filenames = []
         self.count = 0
         self.batch_index = None
-
+       
     def set_data_dir(self, data_dir):
         self.filenames = util.get_files_in_directory(data_dir)
         self.count = len(self.filenames)

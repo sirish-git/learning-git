@@ -165,15 +165,16 @@ class SuperResolution(tf_graph.TensorflowGraph):
         """
 
         batch_dir += "/scale%d" % self.scale
-
+        
         self.train = loader.BatchDataSets(self.scale, batch_dir, batch_image_size, stride_size, channels=self.channels,
                                           resampling_method=self.resampling_method)
 
-        if not self.train.is_batch_exist():
-            self.train.build_batch(data_dir)
-        else:
-            self.train.load_batch_counts()
-        self.train.load_all_batch_images()
+        self.train.build_batch(data_dir)
+        #if not self.train.is_batch_exist():
+        #    self.train.build_batch(data_dir)
+        #else:
+        #    self.train.load_batch_counts()
+        #self.train.load_all_batch_images()
 
     def init_epoch_index(self):
 
