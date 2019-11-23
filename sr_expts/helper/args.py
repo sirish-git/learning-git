@@ -52,7 +52,7 @@ flags.DEFINE_float("momentum", 0.9, "Momentum for momentum optimizer and rmsprop
 flags.DEFINE_integer("batch_num", 20, "Number of mini-batch images for training")
 flags.DEFINE_integer("batch_image_size", 48, "Image size for mini-batch")
 flags.DEFINE_integer("stride_size", 0, "Stride size for mini-batch. If it is 0, use half of batch_image_size")
-flags.DEFINE_integer("training_images", 24000, "Number of training on each epoch")
+flags.DEFINE_integer("training_images", 100000, "Number of training on each epoch")
 flags.DEFINE_boolean("use_l1_loss", False, "Use L1 Error as loss function instead of MSE Error.")
 
 # Learning Rate Control for Training
@@ -63,7 +63,7 @@ flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current l
                                    "value, then training will be finished.")
 
 # Dataset or Others
-flags.DEFINE_string("dataset", "bsd200", "Training dataset dir. [DIV2K_train_HR, yang91, general100, bsd200, other]")
+flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_train_HR, yang91, general100, bsd200, other]")
 flags.DEFINE_string("test_dataset", "set5", "Directory for test dataset [set5, set14, bsd100, urban100, all]")
 flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, each string should be ',' separated," 
                                                 "Directory for test dataset [set5, set14, bsd100, urban100, all]")
@@ -75,7 +75,7 @@ flags.DEFINE_float("max_value", 255, "For normalize image pixel value")
 flags.DEFINE_integer("channels", 1, "Number of image channels used. Now it should be 1. using only Y from YCbCr.")
 flags.DEFINE_integer("psnr_calc_border_size", -1,
                      "Cropping border size for calculating PSNR. if < 0, use 2 + scale for default.")
-flags.DEFINE_boolean("build_batch", False, "Build pre-processed input batch. Makes training significantly faster but "
+flags.DEFINE_boolean("build_batch", True, "Build pre-processed input batch. Makes training significantly faster but "
                                            "the patches are limited to be on the grid.")
 # flags.DEFINE_integer("input_image_width", -1, "The width of the input image. Put -1 if you do not want to have a fixed input size")
 # flags.DEFINE_integer("input_image_height", -1, "The height of the input image. Put -1 if you do not want to hae a fixed input size")
