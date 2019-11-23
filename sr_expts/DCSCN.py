@@ -31,7 +31,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         super().__init__(flags)
 
         # custom architecture flag
-        self.arch_concat_prog = flags.arch_concat_prog
+        self.arch_type = flags.arch_type
         		
         # Model Parameters
         self.scale = flags.scale
@@ -225,7 +225,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.sess.close()
         super().init_session()
 
-    def build_graph(self):
+    def build_graph_dcscn(self):
 
         self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
         self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
@@ -238,11 +238,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         output_feature_num = self.filters
         total_output_feature_num = 0
         input_feature_num = self.channels
-        input_tensor = self.x
-		
-        # custom architecture
-        j = 100         	
-        out_chs = []		
+        input_tensor = self.x		
 
         if self.save_weights:
             with tf.name_scope("X"):
@@ -253,47 +249,16 @@ class SuperResolution(tf_graph.TensorflowGraph):
                 x1 = i / float(self.layers - 1)
                 y1 = pow(x1, 1.0 / self.filters_decay_gamma)
                 output_feature_num = int((self.filters - self.min_filters) * (1 - y1) + self.min_filters)
-                if self.arch_concat_prog:				
-                    #output_feature_num = self.filters // self.filter
-					# channels multiple of 4
-                    output_feature_num = ((output_feature_num // 4) * 4)
-                    if output_feature_num < self.min_filters:
-                        output_feature_num = self.min_filters
-            if self.debug_print:
-                print('debug print: i:{}, input_feature_num: {}, output_feature_num:{}'.format(i, input_feature_num, output_feature_num))
 					
             if (self.depthwise_separable):
                 self.build_depthwise_separable_conv("CNN%d" % (i + 1), input_tensor, self.cnn_size, input_feature_num,
                                             output_feature_num, use_bias=True, activator=self.activator,
                                             use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)
-            else:
-                if self.arch_concat_prog and i >= 2:
-                    global inp_ch
-                    j = j + 1
-                    # concat first layer output and previous layer output and 1x1 for dimension reduction				
-                    if i == 2:
-                        inp_ch = self.filters + out_chs[-1]					
-                        with tf.variable_scope("Concat_feature%d" % (j)):
-                            input_tensor = tf.concat((input_tensor, self.H[0]), 3, name="feature_concat")
-                    elif i >= 3:
-                        inp_ch = self.filters + out_chs[-1]	+ out_chs[-2]
-                        with tf.variable_scope("Concat_feature%d" % (j)):
-                            input_tensor = tf.concat((input_tensor, self.H[0], self.H[-2]), 3, name="feature_concat")
-
-                    if self.debug_print:
-                        print('debug print: i:{}, input_tensor :{}, inp_ch:{}'.format(i, input_tensor, inp_ch))
-                    # 1x1 conv for dimension reduction						
-                    out_ch = input_feature_num					
-                    self.build_conv("CNN%d" % (i + j + 1), input_tensor, 1, inp_ch,
-                                    out_ch, use_bias=True, activator=self.activator,
-                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, append_new_list=True)	
-                    input_tensor = self.H_new[-1]									
-                        					
+            else:					                        					
                 self.build_conv("CNN%d" % (i + 1), input_tensor, self.cnn_size, input_feature_num,
                                 output_feature_num, use_bias=True, activator=self.activator,
                                 use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)
-
-            out_chs.append(output_feature_num)								
+					
             input_feature_num = output_feature_num
             input_tensor = self.H[-1]
             total_output_feature_num += output_feature_num
@@ -379,10 +344,245 @@ class SuperResolution(tf_graph.TensorflowGraph):
         i = 0
         print("--- Complexity statistics for each conv layer ...")
         for param in self.complexity_conv_param:
-            print("conv%2d: %s: #mac:%5d" % (i + 1, param, self.complexity_conv_mac[i]))
+            print("conv%2d: %22s: #mac:%5d" % (i + 1, param, self.complexity_conv_mac[i]))
             i = i + 1
         logging.info("\n")						
 
+    def build_graph_v1_res_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # [5x5x1x16]
+        i = i + 1
+        out1 = self.build_conv("CNN%d" % (i + 1), input_tensor, 5, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+                               
+        # residual connection
+        # [3x3x16x16]
+        i = i + 1
+        out2 = self.build_conv("CNN%d" % (i + 1), out1, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
+        out2 += out1
+
+        # residual connection
+        # [1x1x16x16]
+        i = i + 1
+        out3 = self.build_conv("CNN%d" % (i + 1), out1, 1, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
+        out3 += out1  
+
+        # concat residual outputs
+        out4 = tf.concat((out1, out2, out3), 3, name="feature_concat")
+        
+        # dimension reduction
+        # [1x1x48x16]
+        i = i + 1
+        out5 = self.build_depthwise_separable_conv("CNN%d" % (i + 1), out4, 3, 48, 16, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                    
+        
+        # residual connection
+        # [3x3x16x8]
+        i = i + 1
+        out6 = self.build_conv("CNN%d" % (i + 1), out5, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        #out6 += out1
+        
+        input_channels = 8
+        # building upsampling layer
+        if self.pixel_shuffler:
+            if self.pixel_shuffler_filters != 0:
+                output_channels = self.pixel_shuffler_filters
+            else:
+                output_channels = input_channels
+            if self.scale == 4:
+                self.build_pixel_shuffler_layer("Up-PS", self.H[-1], 2, 
+                                                input_channels, input_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+                self.build_pixel_shuffler_layer("Up-PS2", self.H[-1], 2, 
+                                                input_channels, output_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+            else:
+                self.build_pixel_shuffler_layer("Up-PS", self.H[-1], self.scale, 
+                                                input_channels, output_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+            input_channels = output_channels
+        else:
+            self.build_transposed_conv("Up-TCNN", self.H[-1], self.scale, input_channels)
+
+        for i in range(self.reconstruct_layers - 1):
+            self.build_conv("R-CNN%d" % (i + 1), self.H[-1], self.cnn_size, input_channels, self.reconstruct_filters,
+                            dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
+            input_channels = self.reconstruct_filters
+
+        if (self.depthwise_separable):
+            self.build_depthwise_separable_conv("R-CNN%d" % self.reconstruct_layers, self.H[-1], 
+                        self.cnn_size, input_channels, self.output_channels)
+        else:
+            self.build_conv("R-CNN%d" % self.reconstruct_layers, self.H[-1], self.cnn_size, input_channels,
+                        self.output_channels)
+
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)
+
+        logging.info("\nNetwork Complexity Statistics ... ")				
+        logging.info("Feature:%s Receptive Fields:%d" % (self.features, self.receptive_fields))
+        logging.info("Complexity_Conv:%s Complexity_Total:%s" % (
+            "{:,}".format(self.complexity_conv), "{:,}".format(self.complexity)))	
+        i = 0
+        print("--- Complexity statistics for each conv layer ...")
+        for param in self.complexity_conv_param:
+            print("conv%2d: %22s: #mac:%5d" % (i + 1, param, self.complexity_conv_mac[i]))
+            i = i + 1
+        logging.info("\n")						
+        
+    def build_graph_v2_res_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # [5x5x1x16]
+        i = i + 1
+        out1 = self.build_conv("CNN%d" % (i + 1), input_tensor, 5, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+                               
+        # residual connection
+        # dep-sep[1x1x16x8]
+        i = i + 1
+        out12 = self.build_depthwise_separable_conv("CNN%d" % (i + 1), out1, 3, 16, 8, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+        # [3x3x16x16]
+        i = i + 1
+        out2 = self.build_conv("CNN%d" % (i + 1), out1, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
+        out2 += out12
+
+        # [3x3x8x8]
+        i = i + 1
+        out3 = self.build_conv("CNN%d" % (i + 1), out2, 3, 8, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
+
+        # concat with 1st conv
+        out4 = tf.concat((out1, out3), 3, name="feature_concat")
+        
+        # dimension reduction
+        # [1x1x24x16]
+        i = i + 1
+        out5 = self.build_depthwise_separable_conv("CNN%d" % (i + 1), out4, 3, 24, 16, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                    
+        
+        # concat with 1st, 2nd conv
+        out6 = tf.concat((out1, out2, out5), 3, name="feature_concat")
+        
+        # dimension reduction
+        # [1x1x40x16]
+        i = i + 1
+        out7 = self.build_depthwise_separable_conv("CNN%d" % (i + 1), out6, 3, 40, 16, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                                    
+        # [3x3x16x8]
+        i = i + 1
+        output_channels = input_channels = 8        
+        out8 = self.build_conv("CNN%d" % (i + 1), out7, 3, 16, output_channels, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        
+        # building upsampling layer
+        if self.pixel_shuffler:
+            if self.pixel_shuffler_filters != 0:
+                output_channels = self.pixel_shuffler_filters
+            else:
+                output_channels = input_channels
+            if self.scale == 4:
+                self.build_pixel_shuffler_layer("Up-PS", self.H[-1], 2, 
+                                                input_channels, input_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+                self.build_pixel_shuffler_layer("Up-PS2", self.H[-1], 2, 
+                                                input_channels, output_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+            else:
+                self.build_pixel_shuffler_layer("Up-PS", self.H[-1], self.scale, 
+                                                input_channels, output_channels, 
+                                                depthwise_separable=self.depthwise_separable)
+            input_channels = output_channels
+        else:
+            self.build_transposed_conv("Up-TCNN", self.H[-1], self.scale, input_channels)
+
+        for i in range(self.reconstruct_layers - 1):
+            self.build_conv("R-CNN%d" % (i + 1), self.H[-1], self.cnn_size, input_channels, self.reconstruct_filters,
+                            dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
+            input_channels = self.reconstruct_filters
+
+        if (self.depthwise_separable):
+            self.build_depthwise_separable_conv("R-CNN%d" % self.reconstruct_layers, self.H[-1], 
+                        self.cnn_size, input_channels, self.output_channels)
+        else:
+            self.build_conv("R-CNN%d" % self.reconstruct_layers, self.H[-1], self.cnn_size, input_channels,
+                        self.output_channels)
+
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)
+
+        logging.info("\nNetwork Complexity Statistics ... ")				
+        logging.info("Feature:%s Receptive Fields:%d" % (self.features, self.receptive_fields))
+        logging.info("Complexity_Conv:%s Complexity_Total:%s" % (
+            "{:,}".format(self.complexity_conv), "{:,}".format(self.complexity)))	
+        i = 0
+        print("--- Complexity statistics for each conv layer ...")
+        for param in self.complexity_conv_param:
+            print("conv%2d: %22s: #mac:%5d" % (i + 1, param, self.complexity_conv_mac[i]))
+            i = i + 1
+        logging.info("\n")		        
+        
+    def build_graph(self):
+        if self.arch_type == "dcscn":
+            self.build_graph_dcscn()
+        elif self.arch_type == "v1_res_concat":
+            self.build_graph_v1_res_concat()
+        elif self.arch_type == "v2_res_concat":
+            self.build_graph_v2_res_concat()     
+        else:
+            print("CNN Architecture name not supported, select supported architecture")
+    
     def build_optimizer(self):
         """
         Build loss function. We use 6+scale as a border	and we don't calculate MSE on the border.

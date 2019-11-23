@@ -14,7 +14,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # custom architecture flag
-flags.DEFINE_integer("arch_concat_prog", 0, "progressive concatenation of layers, by default DCNN")
+flags.DEFINE_string("arch_type", "dcscn", "[dcscn, v1_res_concat, v2_res_concat], by default DCSCN")
 
 # Model (network) Parameters
 flags.DEFINE_integer("scale", 2, "Scale factor for Super Resolution (should be 2 or more)")

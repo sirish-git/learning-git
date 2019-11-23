@@ -181,8 +181,9 @@ class TensorflowGraph(tf.Graph):
                             self.pix_per_input * int(w.shape[2] * w.shape[3]))
         self.complexity_conv += (self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
                             self.pix_per_input * int(w.shape[2] * w.shape[3]))
-        mac = self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])
-        self.complexity_conv_param.append("{} x {} x {:3d} x {:3d}".format(w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
+        mac = self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
+              self.pix_per_input * int(w.shape[2] * w.shape[3])
+        self.complexity_conv_param.append("Sep: {} x {} x {:3d} x {:3d}".format(w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
         self.complexity_conv_mac.append(mac)
 
         if bias is not None:

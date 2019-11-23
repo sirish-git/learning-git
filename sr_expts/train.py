@@ -95,14 +95,15 @@ def train(model, flags, trial):
             psnr1, ssim1 = model.evaluate(test_set_files[test_set])
             #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
             print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
-            
+    
+    print("In training loop ...")
     while model.lr > flags.end_lr:
 
         model.build_input_batch()
         model.train_batch()
 
         if model.training_step * model.batch_num >= model.training_images:
-
+            print()
             # one training epoch finished
             model.epochs_completed += 1
             psnr, ssim = model.evaluate(test_filenames)
