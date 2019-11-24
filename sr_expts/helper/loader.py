@@ -98,10 +98,12 @@ class BatchDataSets:
         #util.make_dir(self.batch_dir + "/" + TRUE_IMAGE_DIR)
 
         #self.true_images = []
-        patch_cnt = 150000
-        print("Allocated patches: {}".format(patch_cnt))
+        patches_cnt = 150000
+        pmem = self.batch_image_size * self.scale * self.batch_image_size * self.scale
+        patches_mem = patches_cnt * pmem
+        print("Allocated patches_cnt: {}, patches_mem: {}".format(patches_cnt, patches_mem))
         self.true_images = np.zeros(
-            shape=[patch_cnt, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
+            shape=[patches_cnt+1500, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)
             
         processed_images = 0
@@ -137,8 +139,8 @@ class BatchDataSets:
                 self.true_images[images_count] = true_batch_images[i]
                 images_count += 1
 
-            if images_count > (patch_cnt - 5000):
-                print(" ### Stopping patch process: Increase patches count/memory to process remaining patches also")                
+            if (images_count * pmem) > (patches_mem - 100000):
+                print(" ### Stopping patch process: Increase patches memory to process remaining patches also")                
                 break
                 
             processed_images += 1

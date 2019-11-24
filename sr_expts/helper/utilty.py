@@ -556,7 +556,7 @@ def get_psnr(mse, max_value=255.0):
 
 def print_num_of_total_parameters(output_detail=False, output_to_logging=False):
     total_parameters = 0
-    parameters_string = ""
+    parameters_string = "\n"
 
     for variable in tf.trainable_variables():
 
@@ -566,9 +566,9 @@ def print_num_of_total_parameters(output_detail=False, output_to_logging=False):
             variable_parameters *= dim.value
         total_parameters += variable_parameters
         if len(shape) == 1:
-            parameters_string += ("%s %d, " % (variable.name, variable_parameters))
+            parameters_string += ("%s %d, \n" % (variable.name, variable_parameters))
         else:
-            parameters_string += ("%s %s=%d, " % (variable.name, str(shape), variable_parameters))
+            parameters_string += ("%s %s = %d, \n" % (variable.name, str(shape), variable_parameters))
 
     if output_to_logging:
         if output_detail:
@@ -576,9 +576,9 @@ def print_num_of_total_parameters(output_detail=False, output_to_logging=False):
         logging.info("Total %d variables, %s params" % (len(tf.trainable_variables()), "{:,}".format(total_parameters)))
     else:
         if output_detail:
-            print(parameters_string)
+            print("Total parameters and dimensions ....", parameters_string)
         print("Total %d variables, %s params" % (len(tf.trainable_variables()), "{:,}".format(total_parameters)))
-
+    print()
 
 def flip(image, flip_type, invert=False):
     if flip_type == 0:

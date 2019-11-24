@@ -29,7 +29,7 @@ flags.DEFINE_integer("nin_filters2", 32, "Number of CNN filters in B1 and B2 at 
 flags.DEFINE_integer("cnn_size", 3, "Size of CNN filters")
 flags.DEFINE_integer("reconstruct_layers", 1, "Number of Reconstruct CNN Layers. (can be 0.)")
 flags.DEFINE_integer("reconstruct_filters", 32, "Number of Reconstruct CNN Filters")
-flags.DEFINE_float("dropout_rate", 0.8, "Output nodes should be kept by this probability. If 1, don't use dropout.")
+flags.DEFINE_float("dropout_rate", 1.0, "Output nodes should be kept by this probability. If 1, don't use dropout.")
 flags.DEFINE_string("activator", "prelu", "Activator can be [relu, leaky_relu, prelu, sigmoid, tanh, selu]")
 flags.DEFINE_boolean("pixel_shuffler", True, "Use Pixel Shuffler instead of transposed CNN")
 flags.DEFINE_integer("pixel_shuffler_filters", 0,
