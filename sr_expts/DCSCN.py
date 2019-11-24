@@ -645,17 +645,21 @@ class SuperResolution(tf_graph.TensorflowGraph):
         # dimension reduction
         # [1x1x24x16]        
         i = i + 1
-        out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out6, 3, 3, 24, 16, use_bias=True, activator=self.activator,
-                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
-        out7 += out1                               
+        out7 = self.build_conv("CNN%d" % (i), out6, 1, 3, 24, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # [1x1x24x16]        
+        i = i + 1
+        out8 = self.build_conv("CNN%d" % (i), out6, 3, 1, 24, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                           
                     
         # [3x3x16x8]       
-        i = i + 1
-        out9 = self.build_conv("CNN%d" % (i), out7, 3, 3, 16, 8, use_bias=True, activator=self.activator,
-                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)    
+        #i = i + 1
+        #out9 = self.build_conv("CNN%d" % (i), out7, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+        #                       use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)    
                                
         # concat
-        out10 = tf.concat((out1, out4, out9), 3, name="feature_concat")        
+        out10 = tf.concat((out1, out5, out7, out8), 3, name="feature_concat")        
         
         # dimension reduction
         # [1x1x24x16]        
