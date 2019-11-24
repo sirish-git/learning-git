@@ -22,6 +22,9 @@ class TensorflowGraph(tf.Graph):
 
         self.name = ""
 
+        # network params
+        self.patch_size = flags.batch_image_size
+        
         # graph settings
         self.dropout_rate = flags.dropout_rate
         self.activator = flags.activator
@@ -108,10 +111,17 @@ class TensorflowGraph(tf.Graph):
 
     def conv2d(self, input_tensor, w, stride, bias=None, use_batch_norm=False, name=""):
         output = tf.nn.conv2d(input_tensor, w, strides=[1, stride, stride, 1], padding="SAME", name=name + "_conv")
-        self.complexity += self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])
-        self.complexity_conv += self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])
-        mac = self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])
-        self.complexity_conv_param.append("{} x {} x {:3d} x {:3d}".format(w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
+        
+        # compute complexity
+        # number of pixels
+        ph = self.pix_per_input #input_tensor.get_shape().as_list()[1] // self.patch_size
+        pw = self.pix_per_input #input_tensor.get_shape().as_list()[2] // self.patch_size
+        # pw*ph*kw*kh*inpCh*outCh
+        mac                   = pw * ph * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])        
+        self.complexity      += mac
+        self.complexity_conv += mac
+        # append statistics
+        self.complexity_conv_param.append("{} x {} x {} x {} x {:3d} x {:3d}".format(pw, ph, w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
         self.complexity_conv_mac.append(mac)
 
         if bias is not None:
@@ -123,10 +133,10 @@ class TensorflowGraph(tf.Graph):
 
         return output
 
-    def build_conv(self, name, input_tensor, cnn_size, input_feature_num, output_feature_num, use_bias=False,
+    def build_conv(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
                    activator=None, use_batch_norm=False, dropout_rate=1.0, append_new_list=False):
         with tf.variable_scope(name):
-            w = util.weight([cnn_size, cnn_size, input_feature_num, output_feature_num],
+            w = util.weight([k_h, k_w, input_feature_num, output_feature_num],
                             stddev=self.weight_dev, name="conv_W", initializer=self.initializer)
 
             b = util.bias([output_feature_num], name="conv_B") if use_bias else None
@@ -149,13 +159,13 @@ class TensorflowGraph(tf.Graph):
                 if use_bias:
                     util.add_summaries("bias", self.name, b, save_stddev=True, save_mean=True)
 
-            if self.save_images and cnn_size > 1:
+            if self.save_images and k_w >= 1 and k_h >= 1:
                 util.log_cnn_weights_as_images(self.name, w, max_outputs=self.save_images_num)
 
         if self.receptive_fields == 0:
-            self.receptive_fields = cnn_size
+            self.receptive_fields = k_w
         else:
-            self.receptive_fields += (cnn_size - 1)
+            self.receptive_fields += (k_w - 1)
         self.features += "%d " % output_feature_num
 
         #if(append_new_list == False):		
@@ -177,13 +187,18 @@ class TensorflowGraph(tf.Graph):
             strides=[1, stride, stride, 1], \
             padding="SAME", \
             name=name + "_conv")
-        self.complexity += (self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
-                            self.pix_per_input * int(w.shape[2] * w.shape[3]))
-        self.complexity_conv += (self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
-                            self.pix_per_input * int(w.shape[2] * w.shape[3]))
-        mac = self.pix_per_input * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
-              self.pix_per_input * int(w.shape[2] * w.shape[3])
-        self.complexity_conv_param.append("Sep: {} x {} x {:3d} x {:3d}".format(w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
+
+        # compute complexity
+        # number of pixels
+        ph = self.pix_per_input #input_tensor.get_shape().as_list()[1] // self.patch_size
+        pw = self.pix_per_input #input_tensor.get_shape().as_list()[2] // self.patch_size
+        # pw*ph*kw*kh*inpCh*outCh       
+        mac                   =  pw * ph * int(w.shape[0] * w.shape[1] * w.shape[2] * channel_multiplier) + \
+                                 pw * ph * int(w.shape[2] * w.shape[3])        
+        self.complexity      += mac
+        self.complexity_conv += mac
+        # append statistics                                 
+        self.complexity_conv_param.append("Sep: {} x {} x {} x {} x {:3d} x {:3d}".format(pw, ph, w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
         self.complexity_conv_mac.append(mac)
 
         if bias is not None:
@@ -196,10 +211,10 @@ class TensorflowGraph(tf.Graph):
         return output
 
      # adding the use of depthwise separable convolutions
-    def build_depthwise_separable_conv(self, name, input_tensor, cnn_size, input_feature_num, output_feature_num, use_bias=False,
+    def build_depthwise_separable_conv(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
                     activator=None, use_batch_norm=False, dropout_rate=1.0):
         with tf.variable_scope(name):
-            w = util.weight([cnn_size, cnn_size, input_feature_num, output_feature_num],
+            w = util.weight([k_h, k_w, input_feature_num, output_feature_num],
                             stddev=self.weight_dev, name="conv_W", initializer=self.initializer)
 
             b = util.bias([output_feature_num], name="conv_B") if use_bias else None
@@ -219,13 +234,13 @@ class TensorflowGraph(tf.Graph):
                 if use_bias:
                     util.add_summaries("bias", self.name, b, save_stddev=True, save_mean=True)
 
-            if self.save_images and cnn_size > 1:
+            if self.save_images and k_w >= 1 and k_h >= 1:
                 util.log_cnn_weights_as_images(self.name, w, max_outputs=self.save_images_num)
 
         if self.receptive_fields == 0:
-            self.receptive_fields = cnn_size
+            self.receptive_fields = k_w
         else:
-            self.receptive_fields += (cnn_size - 1)
+            self.receptive_fields += (k_w - 1)
         self.features += "%d " % output_feature_num
 
         self.Weights.append(w)
@@ -260,14 +275,16 @@ class TensorflowGraph(tf.Graph):
     def build_pixel_shuffler_layer(self, name, h, scale, input_filters, output_filters, activator=None, depthwise_separable=False):
         with tf.variable_scope(name):
             if (depthwise_separable):
-                self.build_depthwise_separable_conv(name + "_CNN", h, self.cnn_size, input_filters, scale * scale * output_filters,
+                self.build_depthwise_separable_conv(name + "_CNN", h, self.cnn_size, self.cnn_size, input_filters, scale * scale * output_filters,
                             use_batch_norm=False,
                             use_bias=True)
             else:
-                self.build_conv(name + "_CNN", h, self.cnn_size, input_filters, scale * scale * output_filters,
+                self.build_conv(name + "_CNN", h, self.cnn_size, self.cnn_size, input_filters, scale * scale * output_filters,
                             use_batch_norm=False,
                             use_bias=True)
             self.H.append(tf.depth_to_space(self.H[-1], scale))
+            #update input pixels after calling depth to space
+            self.pix_per_input = self.scale            
             self.build_activator(self.H[-1], output_filters, activator, base_name=name)
 
     def copy_log_to_archive(self, archive_name):

@@ -181,7 +181,7 @@ class BatchDataSets:
 
     def load_all_batch_images(self):
 
-        print("Allocating memory for all batch images.")
+        print("Allocating memory for all batch images...")
         self.input_images = np.zeros(shape=[self.count, self.batch_image_size, self.batch_image_size, 1],
                                      dtype=np.uint8)  # type: np.ndarray
         self.input_interpolated_images = np.zeros(
@@ -191,7 +191,7 @@ class BatchDataSets:
             shape=[self.count, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)  # type: np.ndarray
 
-        print("Loading all batch images.")
+        print("Loading all batch images...")
         for i in range(self.count):
             self.input_images[i] = self.load_input_batch_image(i)
             self.input_interpolated_images[i] = self.load_interpolated_batch_image(i)
