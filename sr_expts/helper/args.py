@@ -56,9 +56,9 @@ flags.DEFINE_integer("training_images", 100000, "Number of training on each epoc
 flags.DEFINE_boolean("use_l1_loss", False, "Use L1 Error as loss function instead of MSE Error.")
 
 # Learning Rate Control for Training
-flags.DEFINE_float("initial_lr", 0.002, "Initial learning rate")
-flags.DEFINE_float("lr_decay", 0.5, "Learning rate decay rate")
-flags.DEFINE_integer("lr_decay_epoch", 9, "After this epochs are completed, learning rate will be decayed by lr_decay.")
+flags.DEFINE_float("initial_lr", 0.0025, "Initial learning rate")
+flags.DEFINE_float("lr_decay", 0.75, "Learning rate decay rate")
+flags.DEFINE_integer("lr_decay_epoch", 15, "After this epochs are completed, learning rate will be decayed by lr_decay.")
 flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current learning rate gets lower than this"
                                    "value, then training will be finished.")
 
