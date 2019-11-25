@@ -139,15 +139,19 @@ def train(model, flags, trial):
 def evaluate_model(model, test_data):
     test_filenames = util.get_files_in_directory(FLAGS.data_dir + "/" + test_data)
     total_psnr = total_ssim = 0
+    total_psnr_rgb = total_ssim_rgb = 0
 
     for filename in test_filenames:
-        psnr, ssim = model.do_for_evaluate_with_output(filename, output_directory=FLAGS.output_dir, print_console=False)
+        psnr, ssim, psnr_rgb, ssim_rgb = model.do_for_evaluate_with_output(filename, output_directory=FLAGS.output_dir, print_console=False)
         total_psnr += psnr
         total_ssim += ssim
-
-    logging.info("Model Average [%s] PSNR:%f, SSIM:%f" % (
+        total_psnr_rgb += psnr_rgb
+        total_ssim_rgb += ssim_rgb
+        
+    logging.info("Model Average [%s] PSNR_Y  :%f, SSIM_Y  :%f" % (
         test_data, total_psnr / len(test_filenames), total_ssim / len(test_filenames)))
-
+    logging.info("Model Average [%s] PSNR_RGB:%f, SSIM_RGB:%f" % (
+        test_data, total_psnr_rgb / len(test_filenames), total_ssim_rgb / len(test_filenames)))
 
 if __name__ == '__main__':
     tf.app.run()

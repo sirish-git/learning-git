@@ -50,7 +50,20 @@ def main(not_parsed_args):
         model.load_graph(FLAGS.frozen_graph_path)
         model.build_summary_saver(with_saver=False) # no need because we are not saving any variables
     else:
-        model.build_graph()
+        if FLAGS.arch_type == "dcscn":
+            model.build_graph_dcscn()
+        elif FLAGS.arch_type == "v1_res_concat":
+            model.build_graph_v1_res_concat()
+        elif FLAGS.arch_type == "v2_res_concat":
+            model.build_graph_v2_res_concat()    
+        elif FLAGS.arch_type == "v3_res_concat":
+            model.build_graph_v3_res_concat()   
+        elif FLAGS.arch_type == "v4_res_concat":
+            model.build_graph_v4_res_concat()            
+        else:
+            print("CNN Architecture name not supported, select supported architecture")
+            return
+
         model.build_summary_saver()
     model.init_all_variables()
 
@@ -89,23 +102,27 @@ def evaluate_bicubic(model, test_data):
 def evaluate_model(model, test_data):
     test_filenames = util.get_files_in_directory(FLAGS.data_dir + "/" + test_data)
     total_psnr = total_ssim = total_time = 0
+    total_psnr_rgb = total_ssim_rgb = 0
 
     for filename in test_filenames:
         start = time.time()
         if FLAGS.save_results:
-            psnr, ssim = model.do_for_evaluate_with_output(filename, output_directory=FLAGS.output_dir,
+            psnr, ssim, psnr_rgb, ssim_rgb = model.do_for_evaluate_with_output(filename, output_directory=FLAGS.output_dir,
                                                            print_console=False)
         else:
-            psnr, ssim = model.do_for_evaluate(filename, print_console=False)
+            psnr, ssim, psnr_rgb, ssim_rgb = model.do_for_evaluate(filename, print_console=False)
         end = time.time()
         elapsed_time = end - start
         total_psnr += psnr
         total_ssim += ssim
+        total_psnr_rgb += psnr_rgb
+        total_ssim_rgb += ssim_rgb        
         total_time += elapsed_time
 
-    logging.info("Model Average [%s] PSNR:%f, SSIM:%f, Time (s): %f" % (
+    logging.info("Model Average [%s] PSNR_Y  :%f, SSIM_Y  :%f, Time (s): %f" % (
         test_data, total_psnr / len(test_filenames), total_ssim / len(test_filenames), total_time / len(test_filenames)))
-
+    logging.info("Model Average [%s] PSNR_RGB:%f, SSIM_RGB:%f, Time (s): %f" % (
+        test_data, total_psnr_rgb / len(test_filenames), total_ssim_rgb / len(test_filenames), total_time / len(test_filenames)))
 
 if __name__ == '__main__':
     tf.app.run()
