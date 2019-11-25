@@ -272,30 +272,30 @@ class SuperResolution(tf_graph.TensorflowGraph):
 
         if self.use_nin:
             if (self.depthwise_separable):
-                self.build_depthwise_separable_conv("A1", self.H_concat, 1, total_output_feature_num, self.nin_filters,
+                self.build_depthwise_separable_conv("A1", self.H_concat, 1, 1, total_output_feature_num, self.nin_filters,
                             dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
                 self.receptive_fields -= (self.cnn_size - 1)
-                self.build_depthwise_separable_conv("B1", self.H_concat, 1, total_output_feature_num, self.nin_filters2,
+                self.build_depthwise_separable_conv("B1", self.H_concat, 1, 1, total_output_feature_num, self.nin_filters2,
                                 dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
-                self.build_depthwise_separable_conv("B2", self.H[-1], 3, self.nin_filters2, self.nin_filters2,
+                self.build_depthwise_separable_conv("B2", self.H[-1], 3, 3, self.nin_filters2, self.nin_filters2,
                                 dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
             else:
-                self.build_conv("A1", self.H_concat, 1, total_output_feature_num, self.nin_filters,
+                self.build_conv("A1", self.H_concat, 1, 1, total_output_feature_num, self.nin_filters,
                             dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
                 self.receptive_fields -= (self.cnn_size - 1)
-                self.build_conv("B1", self.H_concat, 1, total_output_feature_num, self.nin_filters2,
+                self.build_conv("B1", self.H_concat, 1, 1, total_output_feature_num, self.nin_filters2,
                                 dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
-                self.build_conv("B2", self.H[-1], 3, self.nin_filters2, self.nin_filters2,
+                self.build_conv("B2", self.H[-1], 3, 3, self.nin_filters2, self.nin_filters2,
                                 dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
 
             self.H.append(tf.concat([self.H[-1], self.H[-3]], 3, name="Concat2"))
             input_channels = self.nin_filters + self.nin_filters2
         else:
             if (self.depthwise_separable):
-                self.build_depthwise_separable_conv("C", self.H_concat, 1, total_output_feature_num, self.filters,
+                self.build_depthwise_separable_conv("C", self.H_concat, 1, 1, total_output_feature_num, self.filters,
                     dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
             else:
-                self.build_conv("C", self.H_concat, 1, total_output_feature_num, self.filters,
+                self.build_conv("C", self.H_concat, 1, 1, total_output_feature_num, self.filters,
                     dropout_rate=self.dropout_rate, use_bias=True, activator=self.activator)
             input_channels = self.filters
 
