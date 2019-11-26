@@ -34,7 +34,7 @@ flags.DEFINE_string("activator", "prelu", "Activator can be [relu, leaky_relu, p
 flags.DEFINE_boolean("pixel_shuffler", True, "Use Pixel Shuffler instead of transposed CNN")
 flags.DEFINE_integer("pixel_shuffler_filters", 0,
                      "Num of Pixel Shuffler output channels. 0 means use same channels as input.")
-flags.DEFINE_integer("self_ensemble", 8, "Number of using self ensemble method. [1 - 8]")
+flags.DEFINE_integer("self_ensemble", 1, "Number of using self ensemble method. [1 - 8]")
 flags.DEFINE_boolean("batch_norm", False, "use batch normalization after each CNNs")
 flags.DEFINE_boolean("depthwise_separable", False, "use depthwise seperable convolutions for each CNN layer instead")
 
@@ -67,7 +67,7 @@ flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_t
 flags.DEFINE_string("test_dataset", "set5", "Directory for test dataset [set5, set14, bsd100, urban100, all]")
 flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, each string should be ',' separated," 
                                                 "Directory for test dataset [set5, set14, bsd100, urban100, all]")
-flags.DEFINE_integer("tests", 1, "Number of training sets")
+flags.DEFINE_integer("tests", 1, "Number of testing sets")
 flags.DEFINE_boolean("do_benchmark", False, "Evaluate the performance for set5, set14 and bsd100 after the training.")
 
 # Image Processing

@@ -119,9 +119,9 @@ def evaluate_model(model, test_data):
         total_ssim_rgb += ssim_rgb        
         total_time += elapsed_time
 
-    logging.info("Model Average [%s] PSNR_Y  :%f, SSIM_Y  :%f, Time (s): %f" % (
+    logging.info("Model Average [%10s] PSNR_Y  :%f, SSIM_Y  :%f, Time (s): %f" % (
         test_data, total_psnr / len(test_filenames), total_ssim / len(test_filenames), total_time / len(test_filenames)))
-    logging.info("Model Average [%s] PSNR_RGB:%f, SSIM_RGB:%f, Time (s): %f" % (
+    logging.info("Model Average [%10s] PSNR_RGB:%f, SSIM_RGB:%f, Time (s): %f" % (
         test_data, total_psnr_rgb / len(test_filenames), total_ssim_rgb / len(test_filenames), total_time / len(test_filenames)))
 
 if __name__ == '__main__':

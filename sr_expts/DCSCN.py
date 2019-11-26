@@ -659,7 +659,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         #                       use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)    
                                
         # concat
-        out10 = tf.concat((out1, out5, out7, out8), 3, name="feature_concat")        
+        out10 = tf.concat((out6, out7, out8), 3, name="feature_concat")        
         
         # dimension reduction
         # [1x1x24x16]        
