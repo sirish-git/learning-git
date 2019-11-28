@@ -96,53 +96,26 @@ class SuperResolution(tf_graph.TensorflowGraph):
             lr *= self.lr_decay
 
         # initialize environment
-        util.make_dir(self.checkpoint_dir)
+        #util.make_dir(self.checkpoint_dir)
         util.make_dir(flags.graph_dir)
         util.make_dir(self.tf_log_dir)
         if flags.initialize_tf_log:
             util.clean_dir(self.tf_log_dir)
         util.set_logging(flags.log_filename, stream_log_level=logging.INFO, file_log_level=logging.INFO,
                          tf_log_level=tf.logging.WARN)
-        logging.info("\nDCSCN v2-------------------------------------")
+        logging.info("\n [%s] -------------------------------------" % (self.arch_type))
         logging.info("%s [%s]" % (util.get_now_date(), self.name))
 
         self.init_train_step()
+        
+    def create_model_dir(self):
+        self.create_checkpoint_dir(self.scale)
 
     def get_model_name(self, model_name, name_postfix=""):
         if model_name is "":
-            name = "dcscn_L%d_F%d" % (self.layers, self.filters)
-            if self.min_filters != 0:
-                name += "to%d" % self.min_filters
-            if self.filters_decay_gamma != 1.5:
-                name += "_G%2.2f" % self.filters_decay_gamma
-            if self.cnn_size != 3:
-                name += "_C%d" % self.cnn_size
-            if self.scale != 2:
-                name += "_Sc%d" % self.scale
-            if self.use_nin:
-                name += "_NIN"
-                if self.nin_filters != 0:
-                    name += "_A%d" % self.nin_filters
-                if self.nin_filters2 != self.nin_filters // 2:
-                    name += "_B%d" % self.nin_filters2
-            if self.pixel_shuffler:
-                name += "_PS"
-            if self.max_value != 255.0:
-                name += "_M%2.1f" % self.max_value
-            if self.activator != "prelu":
-                name += "_%s" % self.activator
-            if self.batch_norm:
-                name += "_BN"
-            if self.depthwise_separable:
-                name += "_DS"
-            if self.reconstruct_layers >= 1:
-                name += "_R%d" % self.reconstruct_layers
-                if self.reconstruct_filters != 1:
-                    name += "F%d" % self.reconstruct_filters
-            if name_postfix is not "":
-                name += "_" + name_postfix
+            name = self.arch_type + "_" + "{}x_".format(self.scale)
         else:
-            name = "dcscn_%s" % model_name
+            name = "%s" % model_name
 
         return name
 
@@ -574,7 +547,8 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     
         # [3x3x16x8]
         i = i + 1
-        out9 = self.build_conv("CNN%d" % (i), out8, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+        out_ch_num = 16
+        out9 = self.build_conv("CNN%d" % (i), out8, 3, 3, 16, out_ch_num, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
                
         # building upsampling layer
@@ -582,9 +556,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
             
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)            
         # [3x3x16x8]
         i = i + 1
-        out11 = self.build_conv("CNN%d" % (i), out10, 3, 3, 4, 1, use_bias=True, activator=self.activator,
+        out11 = self.build_conv("CNN%d" % (i), out10, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
 
         # global residual
@@ -662,19 +638,22 @@ class SuperResolution(tf_graph.TensorflowGraph):
         out10 = tf.concat((out6, out7, out8), 3, name="feature_concat")        
         
         # dimension reduction
-        # [1x1x24x16]        
+        # [1x1x24x16]  
+        out_ch_num = 32    
         i = i + 1
-        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 40, 32, use_bias=True, activator=self.activator,
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 40, out_ch_num, use_bias=True, activator=self.activator,
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
         out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
-            
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)
         # [3x3x16x8]
         i = i + 1
-        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, 8, 1, use_bias=True, activator=self.activator,
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
 
         # global residual
@@ -887,28 +866,28 @@ class SuperResolution(tf_graph.TensorflowGraph):
             i = i + 1
         logging.info("\n")	    
             
-    def print_status(self, psnr, ssim, log=False):
+    def print_status(self, data_set, psnr, ssim, psnr_rgb, ssim_rgb, log=False):
 
         if self.step == 0:
-            logging.info("Initial PSNR:%f SSIM:%f" % (psnr, ssim))
+            logging.info("[test-set: %s]: Initial PSNR_Y:%f SSIM_Y:%f -- PSNR_RGB:%f SSIM_RGB:%f" % (data_set, psnr, ssim, psnr_rgb, ssim_rgb))
         else:
-            processing_time = (time.time() - self.start_time) / self.step
-            if self.use_l1_loss:
-                line_a = "%s Step:%s PSNR:%f SSIM:%f (Training Loss:%0.3f)" % (
-                    util.get_now_date(), "{:,}".format(self.step), psnr, ssim,
-                    self.training_loss_sum / self.training_step)
-            else:
-                line_a = "%s Step:%s PSNR:%f SSIM:%f (Avg. Train PSNR:%0.3f)" % (
-                    util.get_now_date(), "{:,}".format(self.step), psnr, ssim,
-                    self.training_psnr_sum / self.training_step)
+            processing_time = (time.time() - self.start_time) / self.step                 
             estimated = processing_time * (self.total_epochs - self.epochs_completed) * (
                 self.training_images // self.batch_num)
             h = estimated // (60 * 60)
             estimated -= h * 60 * 60
             m = estimated // 60
             s = estimated - m * 60
-            line_b = "Epoch:%d LR:%f (%2.3fsec/step) Estimated:%d:%d:%d" % (
-                self.epochs_completed, self.lr, processing_time, h, m, s)
+ 
+            line_a = "%s Step:%s, Epoch:%d, LR:%f (%2.3fsec/step) Estimated:%d:%d:%d " % (util.get_now_date(), "{:,}".format(self.step),
+                       self.epochs_completed, self.lr, processing_time, h, m, s)
+            if self.use_l1_loss:
+                line_b = "[test-set: %s] PSNR_Y=%0.3f SSIM_Y=0.5%f -- PSNR_RGB=%0.3f SSIM_RGB=%0.5f  (Training Loss=%0.3f)" % (
+                    data_set, psnr, ssim, psnr_rgb, ssim_rgb, self.training_loss_sum / self.training_step)                    
+            else:
+                line_b = "[test-set: %s] PSNR_Y=%0.3f SSIM_Y=%0.5f -- PSNR_RGB=%0.3f SSIM_RGB=%0.5f (Train PSNR=%0.3f)" % (
+                    data_set, psnr, ssim, psnr_rgb, ssim_rgb, self.training_psnr_sum / self.training_step)              
+
             if log:
                 logging.info(line_a)
                 logging.info(line_b)
@@ -927,6 +906,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
     def evaluate(self, test_filenames):
 
         total_psnr = total_ssim = 0
+        total_psnr_rgb = total_ssim_rgb = 0
         if len(test_filenames) == 0:
             return 0, 0
 
@@ -934,8 +914,10 @@ class SuperResolution(tf_graph.TensorflowGraph):
             psnr, ssim, psnr_rgb, ssim_rgb = self.do_for_evaluate(filename, print_console=False)
             total_psnr += psnr
             total_ssim += ssim
-
-        return total_psnr / len(test_filenames), total_ssim / len(test_filenames)
+            total_psnr_rgb += psnr_rgb
+            total_ssim_rgb += ssim_rgb
+            
+        return total_psnr / len(test_filenames), total_ssim / len(test_filenames), total_psnr_rgb / len(test_filenames), total_ssim_rgb / len(test_filenames)
 
     def do(self, input_image, bicubic_input_image=None):
 

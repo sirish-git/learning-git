@@ -67,7 +67,7 @@ flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_t
 flags.DEFINE_string("test_dataset", "set5", "Directory for test dataset [set5, set14, bsd100, urban100, all]")
 flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, each string should be ',' separated," 
                                                 "Directory for test dataset [set5, set14, bsd100, urban100, all]")
-flags.DEFINE_integer("tests", 1, "Number of testing sets")
+flags.DEFINE_integer("tests", 1, "Number of training sets")
 flags.DEFINE_boolean("do_benchmark", False, "Evaluate the performance for set5, set14 and bsd100 after the training.")
 
 # Image Processing

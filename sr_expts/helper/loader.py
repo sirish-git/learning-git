@@ -97,14 +97,18 @@ class BatchDataSets:
         #util.make_dir(self.batch_dir + "/" + INTERPOLATED_IMAGE_DIR)
         #util.make_dir(self.batch_dir + "/" + TRUE_IMAGE_DIR)
 
-        #self.true_images = []
-        patches_cnt = 150000
-        pmem = self.batch_image_size * self.scale * self.batch_image_size * self.scale
-        patches_mem = patches_cnt * pmem
-        print("Allocated patches_cnt: {}, patches_mem: {}".format(patches_cnt, patches_mem))
+        if self.scale == 2:
+            patches_cnt = 150001
+        else:
+            patches_cnt = 100001
+        
+        # allocate memory for patches
+        pmem1 = self.batch_image_size * self.scale * self.batch_image_size * self.scale
+        patches_mem1 = patches_cnt * pmem1        
         self.true_images = np.zeros(
             shape=[patches_cnt+1500, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)
+        print("Allocated patches_cnt: {}, patches_mem1: {}".format(patches_cnt, patches_mem1))                    
             
         processed_images = 0
         for filename in filenames:
@@ -114,7 +118,7 @@ class BatchDataSets:
             input_image, input_interpolated_image, true_image = \
                 build_image_set(filename, channels=self.channels, resampling_method=self.resampling_method,
                                 scale=self.scale, print_console=False)
-
+            
             # split into batch images
             # Avoid creating input, bicubic images, as they can be created from true image while training            
             #input_batch_images = util.get_split_images(input_image, self.batch_image_size, stride=self.stride)
@@ -130,7 +134,7 @@ class BatchDataSets:
                 # if the original image size * scale is less than batch image size
                 continue
             input_count = true_batch_images.shape[0]
-            #self.true_images.append(true_batch_images)
+            #self.true_images.append(true_batch_images)                 
 
             for i in range(input_count):
             #    #self.save_input_batch_image(images_count, input_batch_images[i])
@@ -139,7 +143,7 @@ class BatchDataSets:
                 self.true_images[images_count] = true_batch_images[i]
                 images_count += 1
 
-            if (images_count * pmem) > (patches_mem - 100000):
+            if (images_count * pmem1) > (patches_mem1 - 100000):
                 print(" ### Stopping patch process: Increase patches memory to process remaining patches also")                
                 break
                 
@@ -153,16 +157,16 @@ class BatchDataSets:
 
         print("%d mini-batch images are built(saved).\n" % images_count)
 
-        config = configparser.ConfigParser()
-        config.add_section("batch")
-        config.set("batch", "count", str(images_count))
-        config.set("batch", "scale", str(self.scale))
-        config.set("batch", "batch_image_size", str(self.batch_image_size))
-        config.set("batch", "stride", str(self.stride))
-        config.set("batch", "channels", str(self.channels))
-
-        with open(self.batch_dir + "/batch_images.ini", "w") as configfile:
-            config.write(configfile)
+        #config = configparser.ConfigParser()
+        #config.add_section("batch")
+        #config.set("batch", "count", str(images_count))
+        #config.set("batch", "scale", str(self.scale))
+        #config.set("batch", "batch_image_size", str(self.batch_image_size))
+        #config.set("batch", "stride", str(self.stride))
+        #config.set("batch", "channels", str(self.channels))
+        #
+        #with open(self.batch_dir + "/batch_images.ini", "w") as configfile:
+        #    config.write(configfile)
 
     def load_batch_counts(self):
         """ load already built batch images. """
@@ -181,26 +185,27 @@ class BatchDataSets:
             self.count = 0
             return
 
-    def load_all_batch_images(self):
-
-        print("Allocating memory for all batch images...")
-        self.input_images = np.zeros(shape=[self.count, self.batch_image_size, self.batch_image_size, 1],
-                                     dtype=np.uint8)  # type: np.ndarray
-        self.input_interpolated_images = np.zeros(
-            shape=[self.count, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
-            dtype=np.uint8)  # type: np.ndarray
-        self.true_images = np.zeros(
-            shape=[self.count, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
-            dtype=np.uint8)  # type: np.ndarray
-
-        print("Loading all batch images...")
-        for i in range(self.count):
-            self.input_images[i] = self.load_input_batch_image(i)
-            self.input_interpolated_images[i] = self.load_interpolated_batch_image(i)
-            self.true_images[i] = self.load_true_batch_image(i)
-            if i % 1000 == 0:
-                print('.', end='', flush=True)
-        print("Load finished.")
+    #def load_all_batch_images(self):
+    #
+    #    print("Allocating memory for all batch images...")
+    #    # Avoided creating input, bicubic images, as they can be created from true image while training 
+    #    #self.input_images = np.zeros(shape=[self.count, self.batch_image_size, self.batch_image_size, 1],
+    #    #                             dtype=np.uint8)  # type: np.ndarray
+    #    #self.input_interpolated_images = np.zeros(
+    #    #    shape=[self.count, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
+    #    #    dtype=np.uint8)  # type: np.ndarray
+    #    self.true_images = np.zeros(
+    #        shape=[self.count, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
+    #        dtype=np.uint8)  # type: np.ndarray
+    #
+    #    print("Loading all batch images...")
+    #    for i in range(self.count):
+    #        #self.input_images[i] = self.load_input_batch_image(i)
+    #        #self.input_interpolated_images[i] = self.load_interpolated_batch_image(i)
+    #        self.true_images[i] = self.load_true_batch_image(i)
+    #        if i % 1000 == 0:
+    #            print('.', end='', flush=True)
+    #    print("Load finished.")
 
     def release_batch_images(self):
 
@@ -231,8 +236,10 @@ class BatchDataSets:
 
             if config.getint("batch", "scale") != self.scale:
                 return False
-            if config.getint("batch", "batch_image_size") != self.batch_image_size:
-                return False
+            # Avoid checking batch size, to allow variable batch sizes
+            #if config.getint("batch", "batch_image_size") != self.batch_image_size:
+            #    return False
+            # Avoid checking stride size
             if config.getint("batch", "stride") != self.stride:
                 return False
             if config.getint("batch", "channels") != self.channels:

@@ -62,7 +62,10 @@ def train(model, flags, trial):
     if len(test_filenames) <= 0:
         print("Can't load images from [%s]" % (flags.data_dir + "/" + flags.test_dataset))
         exit()        
-        
+    
+    # create model directory
+    model.create_model_dir()
+    
     model.init_all_variables()
     if flags.load_model_name != "":
         model.load_model(flags.load_model_name, output_log=True)
@@ -71,8 +74,8 @@ def train(model, flags, trial):
     model.init_epoch_index()
     model_updated = True
 
-    psnr, ssim = model.evaluate(test_filenames)
-    model.print_status(psnr, ssim, log=True)
+    psnr, ssim, psnr_rgb, ssim_rgb = model.evaluate(test_filenames)
+    model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=True)
     model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=True)
 
     psnr_bic = {}
@@ -92,10 +95,11 @@ def train(model, flags, trial):
             #ssim_bic[test_set] = total_ssim
             
             # dummy model evaluation
-            psnr1, ssim1 = model.evaluate(test_set_files[test_set])
+            psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
             #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
             print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
     
+    print("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
     print("\nIn training loop ...")
     while model.lr > flags.end_lr:
 
@@ -106,13 +110,14 @@ def train(model, flags, trial):
             print()
             # one training epoch finished
             model.epochs_completed += 1
-            psnr, ssim = model.evaluate(test_filenames)
-            model.print_status(psnr, ssim, log=model_updated)
+            psnr, ssim, psnr_rgb, ssim_rgb = model.evaluate(test_filenames)
+            model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=model_updated)
+            print("")
             if FLAGS.eval_tests_while_train:
                 for test_set in FLAGS.eval_tests_while_train:
-                    psnr1, ssim1 = model.evaluate(test_set_files[test_set])
+                    psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
                     #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
-                    print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
+                    print("{:16s}: psnr_y={:.3f}, ssim_y={:.5f} -- psnr_rgb={:.3f} ssim_rgb={:.5f}".format(test_set, psnr1, ssim1, psnr_rgb, ssim_rgb))
                 
             model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=model_updated)
             model.save_model(trial=trial, output_log=False)

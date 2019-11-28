@@ -8,6 +8,8 @@ functions for building tensorflow graph
 import logging
 import os
 import shutil
+import datetime
+import numpy as np
 
 import tensorflow as tf
 
@@ -52,8 +54,8 @@ class TensorflowGraph(tf.Graph):
         self.debug_print = flags.debug_print
 
         # Environment (all directory name should not contain '/' after )
-        self.checkpoint_dir = flags.checkpoint_dir
-        self.tf_log_dir = flags.tf_log_dir
+        self.checkpoint_dir = flags.checkpoint_dir + "/" + flags.arch_type
+        self.tf_log_dir = flags.tf_log_dir   
 
         # status / attributes
         self.Weights = []
@@ -70,6 +72,11 @@ class TensorflowGraph(tf.Graph):
 
         self.init_session(flags.gpu_device_id)
 
+    def create_checkpoint_dir(self, scale): 
+        self.checkpoint_dir = self.checkpoint_dir +  "_{}x_".format(scale) + "MAC-{}_".format(self.complexity_conv) + \
+                              "{}".format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        util.make_dir(self.checkpoint_dir)
+    
     def init_session(self, device_id=0):
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True  ## just for use the necesary memory of GPU
