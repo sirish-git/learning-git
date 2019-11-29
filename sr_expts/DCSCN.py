@@ -63,6 +63,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
             self.stride_size = flags.batch_image_size // 2
         else:
             self.stride_size = flags.stride_size
+        self.patches_cnt = flags.patches_cnt
         self.clipping_norm = flags.clipping_norm
         self.use_l1_loss = flags.use_l1_loss
 
