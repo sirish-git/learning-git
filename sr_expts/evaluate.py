@@ -68,7 +68,7 @@ def main(not_parsed_args):
     model.init_all_variables()
 
     if FLAGS.test_dataset == "all":
-        test_list = ['set5', 'set14', 'bsd100']
+        test_list = ['set5', 'set14', 'bsd100', 'div2k_sample']
     else:
         test_list = [FLAGS.test_dataset]
 

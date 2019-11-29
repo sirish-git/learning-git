@@ -104,7 +104,7 @@ flags.DEFINE_integer("debug_print", 0, "Debug prints for layers, shapes, etc")
 
 # frozen model configurations
 flags.DEFINE_boolean("frozenInference", False, "Flag for whether the model to evaluate is frozen.")
-flags.DEFINE_string("frozen_graph_path", './model_to_freeze/frozen_model_optimized.pb', "the path to a frozen model if performing inference from it")
+flags.DEFINE_string("frozen_graph_path", './results/frozen_model.pb', "the path to a frozen model if performing inference from it")
 
 def get():
     print("Python Interpreter version:%s" % sys.version[:3])

@@ -114,6 +114,7 @@ def train(model, flags, trial):
             model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=model_updated)
             print("")
             if FLAGS.eval_tests_while_train:
+                print ("[Evaluation test results ...]")
                 for test_set in FLAGS.eval_tests_while_train:
                     psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
                     #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
