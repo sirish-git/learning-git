@@ -52,10 +52,10 @@ def main(not_parsed_args):
     else:
         if FLAGS.arch_type == "dcscn":
             model.build_graph_dcscn()
-        elif FLAGS.arch_type == "v1_res_concat":
-            model.build_graph_v1_res_concat()
-        elif FLAGS.arch_type == "v2_res_concat":
-            model.build_graph_v2_res_concat()    
+        elif FLAGS.arch_type == "v1_edge_concat":
+            model.build_graph_v1_edge_concat()
+        elif FLAGS.arch_type == "v2_edge_concat":
+            model.build_graph_v2_edge_concat()    
         elif FLAGS.arch_type == "v3_res_concat":
             model.build_graph_v3_res_concat()   
         elif FLAGS.arch_type == "v4_res_concat":

@@ -14,7 +14,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # custom architecture flag
-flags.DEFINE_string("arch_type", "dcscn", "[dcscn, v1_res_concat, v2_res_concat, v3_res_concat], by default DCSCN")
+flags.DEFINE_string("arch_type", "dcscn", "[dcscn, v1_edge_concat, v2_edge_concat, v3_res_concat], by default DCSCN")
 
 # Model (network) Parameters
 flags.DEFINE_integer("scale", 2, "Scale factor for Super Resolution (should be 2 or more)")
