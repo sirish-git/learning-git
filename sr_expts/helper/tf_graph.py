@@ -215,17 +215,15 @@ class TensorflowGraph(tf.Graph):
         if use_batch_norm:
             output = tf.layers.batch_normalization(output, training=self.is_training, name='BN')
 
-        return output
+        return output, depthwise_filter, pointwise_filter
 
      # adding the use of depthwise separable convolutions
     def build_depthwise_separable_conv(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
                     activator=None, use_batch_norm=False, dropout_rate=1.0):
         with tf.variable_scope(name):
-            w = util.weight([k_h, k_w, input_feature_num, output_feature_num],
-                            stddev=self.weight_dev, name="conv_W", initializer=self.initializer)
-
+            w = np.zeros([k_h, k_w, input_feature_num, output_feature_num])
             b = util.bias([output_feature_num], name="conv_B") if use_bias else None
-            h = self.depthwise_separable_conv2d(input_tensor, w, self.cnn_stride, bias=b, use_batch_norm=use_batch_norm, name=name)
+            h, depth_w, point_w = self.depthwise_separable_conv2d(input_tensor, w, self.cnn_stride, bias=b, use_batch_norm=use_batch_norm, name=name)
             
             if activator is not None:
                 h = self.build_activator(h, output_feature_num, activator, base_name=name)
@@ -236,13 +234,15 @@ class TensorflowGraph(tf.Graph):
             self.H.append(h)
 
             if self.save_weights:
-                util.add_summaries("weight", self.name, w, save_stddev=True, save_mean=True)
+                util.add_summaries("depthwise_weight", self.name, depth_w, save_stddev=True, save_mean=True)
+                util.add_summaries("pointwise_weight", self.name, point_w, save_stddev=True, save_mean=True)
                 util.add_summaries("output", self.name, h, save_stddev=True, save_mean=True)
                 if use_bias:
                     util.add_summaries("bias", self.name, b, save_stddev=True, save_mean=True)
 
             if self.save_images and k_w >= 1 and k_h >= 1:
-                util.log_cnn_weights_as_images(self.name, w, max_outputs=self.save_images_num)
+                util.log_cnn_weights_as_images(self.name, depth_w, max_outputs=self.save_images_num)
+                util.log_cnn_weights_as_images(self.name, point_w, max_outputs=self.save_images_num)
 
         if self.receptive_fields == 0:
             self.receptive_fields = k_w
@@ -250,7 +250,8 @@ class TensorflowGraph(tf.Graph):
             self.receptive_fields += (k_w - 1)
         self.features += "%d " % output_feature_num
 
-        self.Weights.append(w)
+        self.Weights.append(depth_w)
+        self.Weights.append(point_w)
         if use_bias:
             self.Biases.append(b)
 
