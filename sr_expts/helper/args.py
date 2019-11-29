@@ -51,6 +51,7 @@ flags.DEFINE_float("epsilon", 1e-8, "epsilon for adam optimizer")
 flags.DEFINE_float("momentum", 0.9, "Momentum for momentum optimizer and rmsprop optimizer")
 flags.DEFINE_integer("batch_num", 20, "Number of mini-batch images for training")
 flags.DEFINE_integer("batch_image_size", 48, "Image size for mini-batch")
+flags.DEFINE_integer("patches_cnt", 0, "Number of patches to be created for training")
 flags.DEFINE_integer("stride_size", 0, "Stride size for mini-batch. If it is 0, use half of batch_image_size")
 flags.DEFINE_integer("training_images", 100000, "Number of training on each epoch")
 flags.DEFINE_boolean("use_l1_loss", False, "Use L1 Error as loss function instead of MSE Error.")
@@ -58,7 +59,7 @@ flags.DEFINE_boolean("use_l1_loss", False, "Use L1 Error as loss function instea
 # Learning Rate Control for Training
 flags.DEFINE_float("initial_lr", 0.0025, "Initial learning rate")
 flags.DEFINE_float("lr_decay", 0.75, "Learning rate decay rate")
-flags.DEFINE_integer("lr_decay_epoch", 15, "After this epochs are completed, learning rate will be decayed by lr_decay.")
+flags.DEFINE_integer("lr_decay_epoch", 10, "After this epochs are completed, learning rate will be decayed by lr_decay.")
 flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current learning rate gets lower than this"
                                    "value, then training will be finished.")
 

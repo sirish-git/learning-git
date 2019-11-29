@@ -70,7 +70,7 @@ def build_input_image(image, width=0, height=0, channels=1, scale=1, alignment=0
 
 
 class BatchDataSets:
-    def __init__(self, scale, batch_dir, batch_image_size, stride_size=0, channels=1, resampling_method="bicubic"):
+    def __init__(self, scale, batch_dir, batch_image_size, stride_size=0, channels=1, resampling_method="bicubic", patches_cnt=0, compress_input_q=0):
 
         self.scale = scale
         self.batch_image_size = batch_image_size
@@ -83,6 +83,13 @@ class BatchDataSets:
         self.count = 0
         self.batch_dir = batch_dir
         self.batch_index = None
+        self.patches_cnt = patches_cnt
+        if self.patches_cnt == 0:
+            if self.scale == 2:
+                self.patches_cnt = 150000
+            else:
+                self.patches_cnt = 70000
+        self.compress_input_q = compress_input_q
 
     def build_batch(self, data_dir):
         """ Build batch images and. """
@@ -97,10 +104,7 @@ class BatchDataSets:
         #util.make_dir(self.batch_dir + "/" + INTERPOLATED_IMAGE_DIR)
         #util.make_dir(self.batch_dir + "/" + TRUE_IMAGE_DIR)
 
-        if self.scale == 2:
-            patches_cnt = 150001
-        else:
-            patches_cnt = 100001
+        patches_cnt = self.patches_cnt
         
         # allocate memory for patches
         pmem1 = self.batch_image_size * self.scale * self.batch_image_size * self.scale
