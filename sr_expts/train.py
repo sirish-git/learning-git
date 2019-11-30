@@ -100,7 +100,9 @@ def train(model, flags, trial):
             print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
     
     print("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
-    print("\nIn training loop ...")
+    print("\nIn Training Loop ...")
+    if FLAGS.compress_input_q > 1:
+        print(" Training with compressed inputs: quality level={}".format(FLAGS.compress_input_q))
     while model.lr > flags.end_lr:
 
         model.build_input_batch()

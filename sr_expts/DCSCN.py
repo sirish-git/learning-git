@@ -19,6 +19,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
+import cv2
 
 from helper import loader, tf_graph, utilty as util
 
@@ -76,6 +77,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.training_images = int(math.ceil(flags.training_images / flags.batch_num) * flags.batch_num)
         self.train = None
         self.test = None
+        self.compress_input_q = flags.compress_input_q
 
         # Image Processing Parameters
         self.max_value = flags.max_value
@@ -141,7 +143,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         batch_dir += "/scale%d" % self.scale
         
         self.train = loader.BatchDataSets(self.scale, batch_dir, batch_image_size, stride_size, channels=self.channels,
-                                          resampling_method=self.resampling_method, patches_cnt=self.patches_cnt)
+                                          resampling_method=self.resampling_method, patches_cnt=self.patches_cnt, compress_input_q=self.compress_input_q)
 
         self.train.build_batch(data_dir)
         #if not self.train.is_batch_exist():
@@ -509,7 +511,8 @@ class SuperResolution(tf_graph.TensorflowGraph):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
                 
                 
-    def build_graph_v4_res_concat(self):
+    def build_graph_v3_res_concat(self):
+        pass
         pass
         
                 
@@ -836,10 +839,10 @@ class SuperResolution(tf_graph.TensorflowGraph):
             m = estimated // 60
             s = estimated - m * 60
  
-            line_a = "%s Step:%s, Epoch:%d, LR:%f (%2.3fsec/step) Estimated:%d:%d:%d " % (util.get_now_date(), "{:,}".format(self.step),
-                       self.epochs_completed, self.lr, processing_time, h, m, s)
+            line_a = "%s\n Epoch:%d, Step:%s, LR:%f (%2.3fsec/step) Estimated:%d:%d:%d " % (util.get_now_date(), self.epochs_completed, 
+                        "{:,}".format(self.step), self.lr, processing_time, h, m, s)
             if self.use_l1_loss:
-                line_b = "[test-set: %s] PSNR_Y=%0.3f SSIM_Y=0.5%f -- PSNR_RGB=%0.3f SSIM_RGB=%0.5f  (Training Loss=%0.3f)" % (
+                line_b = "[test-set: %s] PSNR_Y=%0.3f SSIM_Y=%0.5f -- PSNR_RGB=%0.3f SSIM_RGB=%0.5f  (Training Loss=%0.3f)" % (
                     data_set, psnr, ssim, psnr_rgb, ssim_rgb, self.training_loss_sum / self.training_step)                    
             else:
                 line_b = "[test-set: %s] PSNR_Y=%0.3f SSIM_Y=%0.5f -- PSNR_RGB=%0.3f SSIM_RGB=%0.5f (Train PSNR=%0.3f)" % (
@@ -906,8 +909,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         else:
             y = self.sess.run(self.y_, feed_dict={self.x: input_image.reshape(1, h, w, ch),
                                                   self.x2: bicubic_input_image.reshape(1, self.scale * h,
-                                                                                       self.scale * w, ch),
-                                                  self.dropout: 1.0, self.is_training: 0})
+                                                                                       self.scale * w, ch)})
             output = y[0]
 
         if self.max_value != 255.0:
@@ -955,30 +957,53 @@ class SuperResolution(tf_graph.TensorflowGraph):
         input_image = util.resize_image_by_pil(true_image, 1.0/ self.scale, resampling_method=self.resampling_method)
         input_bicubic_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)
         # RGB-HR (bicubic): down-scaled and up-scaled image
-        util.save_image(output_directory + filename + "_input_bicubic" + extension, input_bicubic_image)
+        #util.save_image(output_directory + filename + "_input_bicubic" + extension, input_bicubic_image)
 
         psnr_rgb = ssim_rgb = 0
         if true_image.shape[2] == 3 and self.channels == 1:
 
-            # for color images
-            input_y_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                     alignment=self.scale, convert_ycbcr=True)
-            input_bicubic_y_image = util.resize_image_by_pil(input_y_image, self.scale,
-                                                             resampling_method=self.resampling_method)
-
-            true_ycbcr_image = util.convert_rgb_to_ycbcr(true_image)
-            # down-scale u,v channels
-            u_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,1:2], 1.0/ self.scale, resampling_method=self.resampling_method)
-            v_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,2:3], 1.0/ self.scale, resampling_method=self.resampling_method)
-            # up-scale u, v channels
+            true_ycbcr_image = util.convert_rgb_to_ycbcr(true_image)        
+            
+            if self.compress_input_q > 1:
+                # create LR RGB image
+                image_lr_rgb = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
+                
+                # compress LR RGB image: Encode and decode
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), self.compress_input_q]
+                ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
+                dec_img = cv2.imdecode(enc_img, 1) 
+                    
+                # convert compressed LR RGB to YUV
+                image_lr_yuv = util.convert_rgb_to_ycbcr(dec_img)
+                input_y_image = image_lr_yuv[:,:,0:1]
+                u_lr = image_lr_yuv[:,:,1:2]
+                v_lr = image_lr_yuv[:,:,2:3]
+                
+                # bicubic upscale YUV channels (Y for network input, UV for final output)
+            else:
+                # for color images
+                input_y_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
+                                                        alignment=self.scale, convert_ycbcr=True)
+    
+                # create u,v LR images from HR u,v
+                u_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,1:2], 1.0/ self.scale, resampling_method=self.resampling_method)
+                v_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,2:3], 1.0/ self.scale, resampling_method=self.resampling_method)
+                
+            # bicubic up-scale y channels
+            input_bicubic_y_image = util.resize_image_by_pil(input_y_image, self.scale, resampling_method=self.resampling_method)                
+            # bicubic up-scale u, v channels
             u_hr = util.resize_image_by_pil(u_lr, self.scale, resampling_method=self.resampling_method)
             v_hr = util.resize_image_by_pil(v_lr, self.scale, resampling_method=self.resampling_method)
 
+            # Network inference
             output_y_image = self.do(input_y_image, input_bicubic_y_image)
+            
+            # compute Y PSNR, SSIM
             psnr, ssim = util.compute_psnr_and_ssim(true_ycbcr_image[:, :, 0:1], output_y_image,
                                                     border_size=self.psnr_calc_border_size)
-            loss_image = util.get_loss_image(true_ycbcr_image[:, :, 0:1], output_y_image,
-                                             border_size=self.psnr_calc_border_size)
+            # get loss image
+            #loss_image = util.get_loss_image(true_ycbcr_image[:, :, 0:1], output_y_image,
+            #                                 border_size=self.psnr_calc_border_size)
 
             #output_color_image = util.convert_y_and_cbcr_to_rgb(output_y_image, true_ycbcr_image[:, :, 1:3])
             # create color image from model upscaling (Y) and bicubic (uv)
@@ -986,21 +1011,22 @@ class SuperResolution(tf_graph.TensorflowGraph):
             uv_image[:, :, 0] = u_hr[:, :, 0]
             uv_image[:, :, 1] = v_hr[:, :, 0]
             output_color_image = util.convert_y_and_cbcr_to_rgb(output_y_image, uv_image)
+            
             # compute RGB PSNR, SSIM
             psnr_rgb, ssim_rgb = util.compute_psnr_and_ssim(true_image, output_color_image,
                                                     border_size=self.psnr_calc_border_size)            
 
-            util.save_image(output_directory + file_path, true_image)
+            #util.save_image(output_directory + file_path, true_image)
             # Y-LR: input to model, rgb2yuv converted and downscaled
-            util.save_image(output_directory + filename + "_input" + extension, input_y_image)
+            #util.save_image(output_directory + filename + "_input" + extension, input_y_image)
             # Y-HR (bicubic): downscaled and upscaled with bicubic
-            util.save_image(output_directory + filename + "_input_bicubic_y" + extension, input_bicubic_y_image)
+            #util.save_image(output_directory + filename + "_input_bicubic_y" + extension, input_bicubic_y_image)
             # Y-HR: Actual input
-            util.save_image(output_directory + filename + "_true_y" + extension, true_ycbcr_image[:, :, 0:1])
+            #util.save_image(output_directory + filename + "_true_y" + extension, true_ycbcr_image[:, :, 0:1])
             # Y-HR: Model output
-            util.save_image(output_directory + filename + "_result" + extension, output_y_image)
+            #util.save_image(output_directory + filename + "_result" + extension, output_y_image)
             util.save_image(output_directory + filename + "_result_c" + extension, output_color_image)
-            util.save_image(output_directory + filename + "_loss" + extension, loss_image)
+            #util.save_image(output_directory + filename + "_loss" + extension, loss_image)
 
         elif true_image.shape[2] == 1 and self.channels == 1:
 
@@ -1029,23 +1055,42 @@ class SuperResolution(tf_graph.TensorflowGraph):
         psnr_rgb = ssim_rgb = 0
         if true_image.shape[2] == 3 and self.channels == 1:
 
-            # for color images
-            input_y_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                     alignment=self.scale, convert_ycbcr=True)
-            true_y_image = util.convert_rgb_to_y(true_image)
-            input_bicubic_y_image = util.resize_image_by_pil(input_y_image, self.scale,
-                                                             resampling_method=self.resampling_method)
-            output_y_image = self.do(input_y_image, input_bicubic_y_image)
-            psnr, ssim = util.compute_psnr_and_ssim(true_y_image, output_y_image,
-                                                    border_size=self.psnr_calc_border_size)
-
             true_ycbcr_image = util.convert_rgb_to_ycbcr(true_image)                                                    
-            # down-scale u,v channels
-            u_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,1:2], 1.0/ self.scale, resampling_method=self.resampling_method)
-            v_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,2:3], 1.0/ self.scale, resampling_method=self.resampling_method)
-            # up-scale u, v channels
+            
+            if self.compress_input_q > 1:
+                # create LR RGB image
+                image_lr_rgb = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
+                
+                # compress LR RGB image: Encode and decode
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), self.compress_input_q]
+                ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
+                dec_img = cv2.imdecode(enc_img, 1) 
+                    
+                # convert compressed LR RGB to YUV
+                image_lr_yuv = util.convert_rgb_to_ycbcr(dec_img)
+                input_y_image = image_lr_yuv[:,:,0:1]
+                u_lr = image_lr_yuv[:,:,1:2]
+                v_lr = image_lr_yuv[:,:,2:3]            
+            else:
+                # for color images
+                input_y_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
+                                                        alignment=self.scale, convert_ycbcr=True)
+                # down-scale u,v channels
+                u_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,1:2], 1.0/ self.scale, resampling_method=self.resampling_method)
+                v_lr = util.resize_image_by_pil(true_ycbcr_image[:,:,2:3], 1.0/ self.scale, resampling_method=self.resampling_method)
+                                                        
+            true_y_image = util.convert_rgb_to_y(true_image)
+            # bicubic up-scale y channels
+            input_bicubic_y_image = util.resize_image_by_pil(input_y_image, self.scale, resampling_method=self.resampling_method)
+            # bicubic up-scale u, v channels
             u_hr = util.resize_image_by_pil(u_lr, self.scale, resampling_method=self.resampling_method)
             v_hr = util.resize_image_by_pil(v_lr, self.scale, resampling_method=self.resampling_method)
+            
+            # Network inference
+            output_y_image = self.do(input_y_image, input_bicubic_y_image)
+            
+            # compute Y PSNR, SSIM
+            psnr, ssim = util.compute_psnr_and_ssim(true_y_image, output_y_image, border_size=self.psnr_calc_border_size)
             
             # create color image from model upscaling (Y) and bicubic (uv)
             uv_image = np.zeros([u_hr.shape[0], u_hr.shape[1], 2])

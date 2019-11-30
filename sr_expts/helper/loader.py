@@ -14,6 +14,7 @@ import numpy as np
 from scipy import misc
 
 from helper import utilty as util
+import cv2
 
 INPUT_IMAGE_DIR = "input"
 INTERPOLATED_IMAGE_DIR = "interpolated"
@@ -113,39 +114,81 @@ class BatchDataSets:
             shape=[patches_cnt+1500, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)
         print("Allocated patches_cnt: {}, patches_mem1: {}".format(patches_cnt, patches_mem1))                    
+        
+        # allocate memory for compressed low-resolution patches
+        if self.compress_input_q > 1:
+            pmem2 = self.batch_image_size * self.batch_image_size
+            patches_mem2 = patches_cnt * pmem2
+            self.compress_images_lr_y = np.zeros(
+                shape=[patches_cnt+1500, self.batch_image_size, self.batch_image_size, 1],
+                dtype=np.uint8)                   
+            print("Allocated compressed (y) patches_cnt: {}, patches_mem2: {}".format(patches_cnt, patches_mem2))    
             
         processed_images = 0
         for filename in filenames:
             output_window_size = self.batch_image_size * self.scale
             output_window_stride = self.stride * self.scale
 
-            input_image, input_interpolated_image, true_image = \
-                build_image_set(filename, channels=self.channels, resampling_method=self.resampling_method,
-                                scale=self.scale, print_console=False)
-            
-            # split into batch images
-            # Avoid creating input, bicubic images, as they can be created from true image while training            
-            #input_batch_images = util.get_split_images(input_image, self.batch_image_size, stride=self.stride)
-            #input_interpolated_batch_images = util.get_split_images(input_interpolated_image, output_window_size,
-            #                                                        stride=output_window_stride)
-            #if input_batch_images is None or input_interpolated_batch_images is None:
-                # if the original image size * scale is less than batch image size
-            #    continue
-            #input_count = input_batch_images.shape[0]
+            if self.compress_input_q > 1:  
+                # read RGB HR image
+                input_image_rgb, input_interpolated_image_rgb, true_image_rgb = \
+                    build_image_set(filename, channels=3, resampling_method=self.resampling_method,
+                                    scale=self.scale, print_console=False)  
+                                    
+                # split each RGB channel and batch
+                batch_HR_r = util.get_split_images(true_image_rgb[:,:,0:1].astype(np.uint8), output_window_size, stride=output_window_stride)                
+                batch_HR_g = util.get_split_images(true_image_rgb[:,:,1:2].astype(np.uint8), output_window_size, stride=output_window_stride)                
+                batch_HR_b = util.get_split_images(true_image_rgb[:,:,2:3].astype(np.uint8), output_window_size, stride=output_window_stride)                
+                if batch_HR_r is None:
+                    # if the original image size * scale is less than batch image size
+                    continue
+                    
+                # concat each r,g,b batch images
+                batch_HR_rgb = np.zeros(shape=[batch_HR_r.shape[0], batch_HR_r.shape[1], batch_HR_r.shape[2], 3], dtype=np.uint8)
+                batch_HR_rgb[:,:,:,0:1] = batch_HR_r
+                batch_HR_rgb[:,:,:,1:2] = batch_HR_g
+                batch_HR_rgb[:,:,:,2:3] = batch_HR_b   
 
-            true_batch_images = util.get_split_images(true_image, output_window_size, stride=output_window_stride)
-            if true_batch_images is None:
-                # if the original image size * scale is less than batch image size
-                continue
-            input_count = true_batch_images.shape[0]
-            #self.true_images.append(true_batch_images)                 
+                # Each patch: downscale->compress->convert_to_y
+                input_count = batch_HR_rgb.shape[0]
+                for i in range(input_count):
+                    # create LR RGB image
+                    image_lr_rgb = util.resize_image_by_pil(batch_HR_rgb[i], 1.0 / self.scale, resampling_method=self.resampling_method)
+                                        
+                    # compress LR RGB image: encode and decode
+                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), self.compress_input_q]
+                    ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
+                    dec_img = cv2.imdecode(enc_img, 1) 
+                    
+                    # convert y
+                    image_lr_y = util.convert_rgb_to_y(dec_img)
+                    image_hr_y = util.convert_rgb_to_y(batch_HR_rgb[i])
+                    
+                    # save compressed LR y images
+                    self.compress_images_lr_y[images_count] = image_lr_y    
+                    # save uncompressed HR y image
+                    self.true_images[images_count] = image_hr_y                                    
+                    images_count += 1
+            else:
+                # Read RGB HR and convert to YUV HR
+                input_image, input_interpolated_image, true_image = \
+                    build_image_set(filename, channels=self.channels, resampling_method=self.resampling_method,
+                                    scale=self.scale, print_console=False)   
 
-            for i in range(input_count):
-            #    #self.save_input_batch_image(images_count, input_batch_images[i])
-            #    #self.save_interpolated_batch_image(images_count, input_interpolated_batch_images[i])
-            #    self.save_true_batch_image(images_count, true_batch_images[i])
-                self.true_images[images_count] = true_batch_images[i]
-                images_count += 1
+                # split Y_HR images
+                true_batch_images = util.get_split_images(true_image, output_window_size, stride=output_window_stride)
+                if true_batch_images is None:
+                    # if the original image size * scale is less than batch image size
+                    continue
+                input_count = true_batch_images.shape[0]
+
+                for i in range(input_count):
+                #    #self.save_input_batch_image(images_count, input_batch_images[i])
+                #    #self.save_interpolated_batch_image(images_count, input_interpolated_batch_images[i])
+                #    self.save_true_batch_image(images_count, true_batch_images[i])
+                            
+                    self.true_images[images_count] = true_batch_images[i]                                    
+                    images_count += 1
 
             if (images_count * pmem1) > (patches_mem1 - 100000):
                 print(" ### Stopping patch process: Increase patches memory to process remaining patches also")                
@@ -223,7 +266,11 @@ class BatchDataSets:
 
         if hasattr(self, 'true_images'):
             del self.true_images
+            if self.compress_input_q > 1:
+                del self.compress_images_lr_y
         self.true_images = None
+        if self.compress_input_q > 1:
+            self.compress_images_lr_y = None
 
     # verify already created batch has same properties as batch requested in current training instance
     def is_batch_exist(self):
@@ -281,9 +328,16 @@ class BatchDataSets:
 
         number = self.get_next_image_no()
         if max_value == 255:
+            # label (HR) image
             true_image = self.true_images[number]
-            # create input, bicubic images from true image
-            input_image = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
+            
+            # create input images (LR) from true image
+            if self.compress_input_q > 1:
+                input_image = self.compress_images_lr_y[number]
+            else:
+                input_image = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
+                
+            # interpolate input for skip connection
             input_interpolated_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)        
             return input_image, input_interpolated_image, true_image
         else:
