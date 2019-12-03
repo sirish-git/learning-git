@@ -65,8 +65,8 @@ flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current l
 
 # Dataset or Others
 flags.DEFINE_integer("compress_input_q", 0, "compress the inputs to handle SR for compressed inputs, specify the JPEG quality level")
-flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_train_HR, yang91, general100, bsd200, other]")
-flags.DEFINE_string("test_dataset", "set5", "Directory for test dataset [set5, set14, bsd100, Urban100, all]")
+flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_train_HR, yang91, general100, other]")
+flags.DEFINE_string("test_dataset", "bsd200", "Directory for test dataset [set5, set14, bsd100, bsd200, Urban100, DIV2K_valid_HR, all]")
 flags.DEFINE_list("eval_tests_while_train", [], "Evaluate test sets while training @each epoch, each string should be ',' separated," 
                                                 "Directory for test dataset [set5, set14, bsd100, Urban100, all]")
 flags.DEFINE_integer("tests", 1, "Number of training sets")
@@ -89,7 +89,7 @@ flags.DEFINE_string("data_dir", "data", "Directory for original images")
 flags.DEFINE_string("batch_dir", "batch_data", "Directory for training batch images")
 flags.DEFINE_string("output_dir", "output", "Directory for output test images")
 flags.DEFINE_string("tf_log_dir", "tf_log", "Directory for tensorboard log")
-flags.DEFINE_string("log_filename", "log.txt", "log filename")
+flags.DEFINE_string("log_filename", "training_log.txt", "log filename")
 flags.DEFINE_string("model_name", "", "model name for save files and tensorboard log")
 flags.DEFINE_string("load_model_name", "", "Filename of model loading before start [filename or 'default']")
 

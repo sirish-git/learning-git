@@ -113,7 +113,7 @@ class BatchDataSets:
         self.true_images = np.zeros(
             shape=[patches_cnt+1500, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)
-        print("Allocated patches_cnt: {}, patches_mem1: {}".format(patches_cnt, patches_mem1))                    
+        logging.info("Allocated patches_cnt: {}, patches_mem1: {}".format(patches_cnt, patches_mem1))                    
         
         # allocate memory for compressed low-resolution patches
         if self.compress_input_q > 1:
@@ -122,7 +122,7 @@ class BatchDataSets:
             self.compress_images_lr_y = np.zeros(
                 shape=[patches_cnt+1500, self.batch_image_size, self.batch_image_size, 1],
                 dtype=np.uint8)                   
-            print("Allocated compressed (y) patches_cnt: {}, patches_mem2: {}".format(patches_cnt, patches_mem2))    
+            logging.info("Allocated compressed (y) patches_cnt: {}, patches_mem2: {}".format(patches_cnt, patches_mem2))    
             
         processed_images = 0
         for filename in filenames:
@@ -191,18 +191,18 @@ class BatchDataSets:
                     images_count += 1
 
             if (images_count * pmem1) > (patches_mem1 - 100000):
-                print(" ### Stopping patch process: Increase patches memory to process remaining patches also")                
+                logging.info(" ### Stopping patch process: Increase patches memory to process remaining patches also")                
                 break
                 
             processed_images += 1
             if processed_images % 10 == 0:
                 print('.', end='', flush=True)
 
-        print("Finished batch creation.")
-        print(" --- processed images: ", processed_images)        
+        logging.info("Finished batch creation.")
+        logging.info(" --- processed images: ".format(processed_images))        
         self.count = images_count
 
-        print("%d mini-batch images are built(saved).\n" % images_count)
+        logging.info("%d mini-batch images are built(saved).\n" % images_count)
 
         #config = configparser.ConfigParser()
         #config.add_section("batch")

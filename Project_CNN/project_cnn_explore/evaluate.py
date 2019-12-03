@@ -63,7 +63,13 @@ def main(not_parsed_args):
         elif FLAGS.arch_type == "v5_edge_concat":
             model.build_graph_v5_edge_concat() 
         elif FLAGS.arch_type == "v6_edge_concat":
-            model.build_graph_v6_edge_concat()             
+            model.build_graph_v6_edge_concat()     
+        elif FLAGS.arch_type == "v7_edge_concat":
+            model.build_graph_v7_edge_concat()  
+        elif FLAGS.arch_type == "v8_edge_concat":
+            model.build_graph_v8_edge_concat()  
+        elif FLAGS.arch_type == "v9_edge_concat":
+            model.build_graph_v9_edge_concat()              
         else:
             print("CNN Architecture name not supported, select supported architecture")
             return

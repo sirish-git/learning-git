@@ -10,7 +10,7 @@ Testing Environment: Python 3.6.1, tensorflow >= 1.3.0
 
 import logging
 import sys
-
+import shutil
 import tensorflow as tf
 
 import DCSCN
@@ -82,9 +82,9 @@ def train(model, flags, trial):
     ssim_bic = {}
     test_set_files = {}    
     if FLAGS.eval_tests_while_train:
-        print("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))        
+        logging.info("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))        
         for test_set in FLAGS.eval_tests_while_train:
-            #print("test_set: {}".format(test_set))        
+            #logging.info("test_set: {}".format(test_set))        
             test_files = util.get_files_in_directory(flags.data_dir + "/" + test_set)
             test_set_files[test_set] = test_files
             
@@ -96,42 +96,66 @@ def train(model, flags, trial):
             
             # dummy model evaluation
             psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
-            #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
-            print("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
+            #logging.info("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
+            logging.info("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
     
-    print("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
-    print("\nIn Training Loop ...")
+    logging.info("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
+    logging.info("\nIn Training Loop ...")
     if FLAGS.compress_input_q > 1:
-        print(" Training with compressed inputs: quality level={}".format(FLAGS.compress_input_q))
+        logging.info(" Training with compressed inputs: quality level={}".format(FLAGS.compress_input_q))
+    psnr_best = ssim_best = epoch_best = 0
     while model.lr > flags.end_lr:
 
         model.build_input_batch()
         model.train_batch()
 
         if model.training_step * model.batch_num >= model.training_images:
-            print()
+            logging.info("")
             # one training epoch finished
             model.epochs_completed += 1
             psnr, ssim, psnr_rgb, ssim_rgb = model.evaluate(test_filenames)
             model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=model_updated)
-            print("")
+
             if FLAGS.eval_tests_while_train:
-                print ("[Evaluation test results ...]")
+                logging.info ("[Evaluation test results ...]")
                 for test_set in FLAGS.eval_tests_while_train:
-                    psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
-                    #print("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
-                    print("{:16s}: psnr_y={:.3f}, ssim_y={:.5f} -- psnr_rgb={:.3f} ssim_rgb={:.5f}".format(test_set, psnr1, ssim1, psnr_rgb, ssim_rgb))
+                    psnr1, ssim1, psnr_rgb1, ssim_rgb1 = model.evaluate(test_set_files[test_set])
+                    #logging.info("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
+                    logging.info("{:16s}: psnr_y={:.3f}, ssim_y={:.5f} -- psnr_rgb={:.3f} ssim_rgb={:.5f}".format(test_set, psnr1, ssim1, psnr_rgb1, ssim_rgb1))
                 
             model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=model_updated)
+            
+            # save model every iteration
             model.save_model(trial=trial, output_log=False)
+            # save best model based on ssim
+            #name_ckpt = model.name + "/" + "best_ssim" + "/" + "_best"
+            if FLAGS.compress_input_q > 1:
+                # best rgb ssim
+                if ssim_rgb > ssim_best:
+                    ssim_best = ssim_rgb
+                    psnr_best = psnr_rgb
+                    epoch_best = model.epochs_completed
+                    model.save_model(trial=trial, output_log=False, dir="best_ssim")
+            else:
+                # best Y ssim
+                if ssim > ssim_best:
+                    ssim_best = ssim
+                    psnr_best = psnr
+                    epoch_best = model.epochs_completed
+                    model.save_model(trial=trial, output_log=False, dir="best_ssim")    
+            logging.info("*** Best Test/Valid set PSNR: {:.3f}, SSIM: {:.5f} @Epoch: {}".format(psnr_best, ssim_best, epoch_best))
 
             model_updated = model.update_epoch_and_lr()
             model.init_epoch_index()
+            
+            # copy the log file to model file (Todo: directly create in model file)
+            shutil.copy(FLAGS.log_filename, model.checkpoint_dir)
 
     model.end_train_step()
 
     # save last generation anyway
-    model.save_model(trial=trial, output_log=True)
+    name_ckpt = model.name + "_final_epoch_{}".format(model.epochs_completed)
+    model.save_model(trial=trial, output_log=True, dir="final_epoch")
 
     # outputs result
     evaluate_model(model, flags.test_dataset)

@@ -326,14 +326,20 @@ class TensorflowGraph(tf.Graph):
         else:
             print("Model restored [ %s ]." % filename)
 
-    def save_model(self, name="", trial=0, output_log=False):
+    def save_model(self, name="", trial=0, output_log=False, dir=""):
         if name == "" or name == "default":
             name = self.name
 
         if trial > 0:
             filename = self.checkpoint_dir + "/" + name + "_" + str(trial) + ".ckpt"
         else:
-            filename = self.checkpoint_dir + "/" + name + ".ckpt"
+            if dir == "":
+                filename = self.checkpoint_dir + "/" + name + ".ckpt"
+            else:
+                dir_name = self.checkpoint_dir + "/" + dir
+                if not os.path.exists(dir_name):
+                    os.makedirs(dir_name)            
+                filename = self.checkpoint_dir + "/" + dir + "/" + name + ".ckpt"
 
         self.saver.save(self.sess, filename)
 
