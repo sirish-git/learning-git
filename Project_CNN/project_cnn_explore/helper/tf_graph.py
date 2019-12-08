@@ -341,6 +341,7 @@ class TensorflowGraph(tf.Graph):
                     os.makedirs(dir_name)            
                 filename = self.checkpoint_dir + "/" + dir + "/" + name + ".ckpt"
 
+        # save the model
         self.saver.save(self.sess, filename)
 
         if output_log:

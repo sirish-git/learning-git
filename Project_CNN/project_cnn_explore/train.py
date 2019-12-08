@@ -103,7 +103,8 @@ def train(model, flags, trial):
     logging.info("\nIn Training Loop ...")
     if FLAGS.compress_input_q > 1:
         logging.info(" Training with compressed inputs: quality level={}".format(FLAGS.compress_input_q))
-    psnr_best = ssim_best = epoch_best = 0
+    psnr_best1 = ssim_best1 = epoch_best1_ssim = 0
+    psnr_best2 = ssim_best2 = epoch_best2_psnr = 0
     while model.lr > flags.end_lr:
 
         model.build_input_batch()
@@ -114,7 +115,7 @@ def train(model, flags, trial):
             # one training epoch finished
             model.epochs_completed += 1
             psnr, ssim, psnr_rgb, ssim_rgb = model.evaluate(test_filenames)
-            model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=model_updated)
+            model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=True)
 
             if FLAGS.eval_tests_while_train:
                 logging.info ("[Evaluation test results ...]")
@@ -126,25 +127,46 @@ def train(model, flags, trial):
             model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=model_updated)
             
             # save model every iteration
-            model.save_model(trial=trial, output_log=False)
+            model.save_model(trial=trial, output_log=True)
+                
             # save best model based on ssim
-            #name_ckpt = model.name + "/" + "best_ssim" + "/" + "_best"
             if FLAGS.compress_input_q > 1:
                 # best rgb ssim
-                if ssim_rgb > ssim_best:
-                    ssim_best = ssim_rgb
-                    psnr_best = psnr_rgb
-                    epoch_best = model.epochs_completed
-                    model.save_model(trial=trial, output_log=False, dir="best_ssim")
+                if ssim_rgb > ssim_best1:
+                    ssim_best1 = ssim_rgb
+                    psnr_best1 = psnr_rgb
+                    epoch_best1_ssim = model.epochs_completed
             else:
                 # best Y ssim
-                if ssim > ssim_best:
-                    ssim_best = ssim
-                    psnr_best = psnr
-                    epoch_best = model.epochs_completed
-                    model.save_model(trial=trial, output_log=False, dir="best_ssim")    
-            logging.info("*** Best Test/Valid set PSNR: {:.3f}, SSIM: {:.5f} @Epoch: {}".format(psnr_best, ssim_best, epoch_best))
-
+                if ssim > ssim_best1:
+                    ssim_best1 = ssim
+                    psnr_best1 = psnr
+                    epoch_best1_ssim = model.epochs_completed
+            
+            # save best model based on psnr
+            if FLAGS.compress_input_q > 1:
+                # best rgb psnr
+                if psnr_rgb > psnr_best2:
+                    ssim_best2 = ssim_rgb
+                    psnr_best2 = psnr_rgb
+                    epoch_best2_psnr = model.epochs_completed
+            else:
+                # best Y psnr
+                if psnr > psnr_best2:
+                    ssim_best2 = ssim
+                    psnr_best2 = psnr
+                    epoch_best2_psnr = model.epochs_completed
+            
+            # best model saving: don't save separately instead copy already saved to make it faster
+            if epoch_best1_ssim == model.epochs_completed:
+                model.save_model(trial=trial, output_log=True, dir="best_ssim")
+            if epoch_best2_psnr == model.epochs_completed:
+                model.save_model(trial=trial, output_log=True, dir="best_psnr")
+                
+            # best ssim/psnr info
+            logging.info("*** Best-SSIM: Test-set PSNR: {:.3f}, SSIM: {:.5f} @Epoch: {}".format(psnr_best1, ssim_best1, epoch_best1_ssim))                    
+            logging.info("*** Best-PSNR: Test-set PSNR: {:.3f}, SSIM: {:.5f} @Epoch: {}".format(psnr_best2, ssim_best2, epoch_best2_psnr))
+            
             model_updated = model.update_epoch_and_lr()
             model.init_epoch_index()
             
@@ -154,7 +176,6 @@ def train(model, flags, trial):
     model.end_train_step()
 
     # save last generation anyway
-    name_ckpt = model.name + "_final_epoch_{}".format(model.epochs_completed)
     model.save_model(trial=trial, output_log=True, dir="final_epoch")
 
     # outputs result

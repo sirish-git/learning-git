@@ -984,9 +984,26 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                                
         # concat
-        out4 = tf.concat((out1, out2, out3), 3, name="feature_concat")                                                                   
-                  
+        out4 = tf.concat((out2, out3), 3, name="feature_concat")                                                                   
+                 
+        # conv  dep-sep   
+        i = i + 1
+        out200 = self.build_depthwise_separable_conv("CNN%d" % (i), out4, 3, 3, 8, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                   
                                
+        # conv     
+        i = i + 1
+        out201 = self.build_conv("CNN%d" % (i), out200, 1, 3, 8, 4, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+              
+        # conv     
+        i = i + 1
+        out202 = self.build_conv("CNN%d" % (i), out200, 1, 3, 8, 4, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+ 
+         # concat
+        out4 = tf.concat((out4, out201, out202), 3, name="feature_concat")   
+              
         # conv dep-sep
         out_ch_num = 8    
         i = i + 1
@@ -999,7 +1016,8 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.pix_per_input = self.scale
         
         # compute the channels appropriately based on scale and depth2space        
-        inp_ch_num = out_ch_num // (self.scale * self.scale)
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+        
         # [3x3x16x8]
         i = i + 1
         out7 = self.build_conv("CNN%d" % (i), out6, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
@@ -1117,17 +1135,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
 
         # conv    
         i = i + 1        
-        out0 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 8, use_bias=True, activator=self.activator,
-                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
-                               
-        # conv    
-        i = i + 1        
-        out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out0, 3, 3, 8, 4, use_bias=True, activator=self.activator,
+        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 8, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
 
         # conv     
         i = i + 1
-        out2 = self.build_conv("CNN%d" % (i), out1, 1, 3, 4, 4, use_bias=True, activator=self.activator,
+        out2 = self.build_conv("CNN%d" % (i), out1, 1, 3, 8, 4, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
 
         # conv dep-sep      
@@ -1137,7 +1150,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                
         # conv     
         i = i + 1
-        out3 = self.build_conv("CNN%d" % (i), out1, 3, 1, 4, 4, use_bias=True, activator=self.activator,
+        out3 = self.build_conv("CNN%d" % (i), out1, 3, 1, 8, 4, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                          
         # conv dep-sep      
@@ -1146,13 +1159,20 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                                
         # concat
-        out4 = tf.concat((out1, out2, out3), 3, name="feature_concat")                                                                   
-                  
+        out4 = tf.concat((out2, out3), 3, name="feature_concat")                                                                   
+                 
+        # conv  dep-sep   
+        i = i + 1
+        out200 = self.build_depthwise_separable_conv("CNN%d" % (i), out4, 3, 3, 8, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                   
                                
+        # concat
+        out4 = tf.concat((out4, out200), 3, name="feature_concat")   
+              
         # conv dep-sep
         out_ch_num = 8    
         i = i + 1
-        out5 = self.build_depthwise_separable_conv("CNN%d" % (i), out4, 3, 3, 12, out_ch_num, use_bias=True, activator=self.activator,
+        out5 = self.build_depthwise_separable_conv("CNN%d" % (i), out4, 3, 3, 16, out_ch_num, use_bias=True, activator=self.activator,
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
@@ -1161,7 +1181,8 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.pix_per_input = self.scale
         
         # compute the channels appropriately based on scale and depth2space        
-        inp_ch_num = out_ch_num // (self.scale * self.scale)
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+        
         # [3x3x16x8]
         i = i + 1
         out7 = self.build_conv("CNN%d" % (i), out6, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
