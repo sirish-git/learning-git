@@ -62,7 +62,10 @@ flags.DEFINE_float("lr_decay", 0.75, "Learning rate decay rate")
 flags.DEFINE_integer("lr_decay_epoch", 10, "After this epochs are completed, learning rate will be decayed by lr_decay.")
 flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current learning rate gets lower than this"
                                    "value, then training will be finished.")
-
+flags.DEFINE_integer("warm_up", 0, "Enable warmup learning at start of training.")
+flags.DEFINE_float("warm_up_lr", 0.0002, "Initial warmpup learning rate to make smaller steps @each batch towards optimal")
+flags.DEFINE_integer("warm_up_epochs", 5, "Number of epochs for warmpup learning at start of the training.")
+                                   
 # Dataset or Others
 flags.DEFINE_integer("compress_input_q", 0, "compress the inputs to handle SR for compressed inputs, specify the JPEG quality level")
 flags.DEFINE_string("dataset", "DIV2K_train_HR", "Training dataset dir. [DIV2K_train_HR, yang91, general100, other]")

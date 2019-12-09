@@ -109,7 +109,14 @@ def train(model, flags, trial):
 
         model.build_input_batch()
         model.train_batch()
+        
+        # After each batch update learning rate
+        if model.warm_up > 0:
+            # till warm-up lr reaches initial lr
+            if model.lr < model.initial_lr:
+                model.update_epoch_and_lr()
 
+        # After each epoch: save models and update learning rate
         if model.training_step * model.batch_num >= model.training_images:
             logging.info("")
             # one training epoch finished
