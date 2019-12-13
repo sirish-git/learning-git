@@ -398,7 +398,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -501,7 +506,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -606,7 +616,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -709,7 +724,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
         out_ch_num = 32                                      
         
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -823,7 +843,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -921,7 +946,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1016,7 +1046,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network        
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1117,7 +1152,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network        
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1197,7 +1237,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network        
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1280,7 +1325,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network          
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1366,7 +1416,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network          
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1457,7 +1512,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out6 = tf.depth_to_space(out5, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out6 = out5
+        else:
+            # for SR network          
+            out6 = tf.depth_to_space(out5, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
@@ -1566,7 +1626,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
-        out12 = tf.depth_to_space(out11, self.scale)
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network          
+            out12 = tf.depth_to_space(out11, self.scale)
         #update input pixels after calling depth to space
         self.pix_per_input = self.scale
         
