@@ -78,27 +78,38 @@ def train(model, flags, trial):
     model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=True)
     model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=True)
 
-    psnr_bic = {}
-    ssim_bic = {}
-    test_set_files = {}    
+    # Bicubic results evaluation
+    if model.scale == 1:
+        logging.info("JPEG Compression Results")        
+    else:
+        logging.info("Bicubic Upscaling Results")
+    eval_set_files = {}    
     if FLAGS.eval_tests_while_train:
         logging.info("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))        
         for test_set in FLAGS.eval_tests_while_train:
             #logging.info("test_set: {}".format(test_set))        
             test_files = util.get_files_in_directory(flags.data_dir + "/" + test_set)
-            test_set_files[test_set] = test_files
+            eval_set_files[test_set] = test_files
             
             # bicubic evaluation
-            #total_psnr, total_ssim = evaluate.evaluate_bicubic(model, test_set)
-            # store
-            #psnr_bic[test_set] = total_psnr
-            #ssim_bic[test_set] = total_ssim
-            
-            # dummy model evaluation
-            psnr1, ssim1, psnr_rgb, ssim_rgb = model.evaluate(test_set_files[test_set])
-            #logging.info("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
-            logging.info("{:16s}: psnr={:.3f}, ssim={:.3f}".format(test_set, psnr1, ssim1))
-    
+            avg_psnr_Y = avg_ssim_Y = avg_psnr_rgb = avg_ssim_rgb = 0
+            file_cnt = 0
+            for filename in test_files:
+                true_image = util.set_image_alignment(util.load_image(filename, print_console=False), model.scale)
+                #print("filename: {}, shape: {}".format(filename, true_image.shape))
+                if true_image.shape[2] != 3:
+                    #print("1-channel image: filename: {}, shape: {}".format(filename, true_image.shape))
+                    continue
+                file_cnt += 1
+                psnr_Y, ssim_Y, psnr_rgb, ssim_rgb = model.evaluate_bicubic(filename)
+                avg_psnr_Y += psnr_Y
+                avg_ssim_Y += ssim_Y
+                avg_psnr_rgb += psnr_rgb
+                avg_ssim_rgb += ssim_rgb                
+                #print("id:{}, filename: {}, psnr_Y:{:.3f}, ssim_Y:{:.3f}, psnr_rgb:{:.3f}, ssim_rgb:{:.3f}".format(file_cnt, filename, psnr_Y, ssim_Y, psnr_rgb, ssim_rgb))
+            logging.info("{:16s}: psnr_Y={:.3f}, ssim_Y={:.3f}, psnr_RGB={:.3f}, ssim_RGB={:.3f}".format(test_set, avg_psnr_Y/file_cnt, avg_ssim_Y/file_cnt, avg_psnr_rgb/file_cnt, avg_ssim_rgb/file_cnt))           
+
+    # Training loop
     logging.info("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
     logging.info("\nIn Training Loop ...")
     if FLAGS.compress_input_q > 1:
@@ -127,8 +138,7 @@ def train(model, flags, trial):
             if FLAGS.eval_tests_while_train:
                 logging.info ("[Evaluation test results ...]")
                 for test_set in FLAGS.eval_tests_while_train:
-                    psnr1, ssim1, psnr_rgb1, ssim_rgb1 = model.evaluate(test_set_files[test_set])
-                    #logging.info("{:16s}: psnr={:.3f} (bicubic={:.3f}), ssim={:.3f} (bicubic={:.3f})".format(test_set, psnr1, psnr_bic[test_set], ssim1, ssim_bic[test_set]))
+                    psnr1, ssim1, psnr_rgb1, ssim_rgb1 = model.evaluate(eval_set_files[test_set])
                     logging.info("{:16s}: psnr_y={:.3f}, ssim_y={:.5f} -- psnr_rgb={:.3f} ssim_rgb={:.5f}".format(test_set, psnr1, ssim1, psnr_rgb1, ssim_rgb1))
                 
             model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=model_updated)

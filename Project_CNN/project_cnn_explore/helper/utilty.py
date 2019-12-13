@@ -16,6 +16,7 @@ import tensorflow as tf
 from PIL import Image
 from os.path import isfile, join
 from scipy import misc
+import cv2
 
 from skimage.measure import compare_psnr, compare_ssim
 
@@ -183,7 +184,24 @@ def convert_y_and_cbcr_to_rgb(y_image, cbcr_image):
     ycbcr_image[:, :, 1:3] = cbcr_image[:, :, 0:2]
 
     return convert_ycbcr_to_rgb(ycbcr_image)
+    
+def compress_with_jpeg(true_image, compress_input_q, scale, resampling_method):
 
+    # create LR RGB image
+    image_lr_rgb = resize_image_by_pil(true_image, 1.0 / scale, resampling_method=resampling_method)
+    
+    # compress LR RGB image: Encode and decode
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_input_q]
+    ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
+    dec_img = cv2.imdecode(enc_img, 1) 
+        
+    # convert compressed LR RGB to YUV
+    image_lr_yuv = convert_rgb_to_ycbcr(dec_img)
+    input_y_image = image_lr_yuv[:,:,0:1]
+    u_lr = image_lr_yuv[:,:,1:2]
+    v_lr = image_lr_yuv[:,:,2:3]
+
+    return input_y_image, u_lr, v_lr
 
 def set_image_alignment(image, alignment):
     alignment = int(alignment)

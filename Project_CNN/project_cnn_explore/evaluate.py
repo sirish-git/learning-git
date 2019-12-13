@@ -106,14 +106,14 @@ def evaluate_bicubic(model, test_data):
     total_psnr = total_ssim = 0
 
     for filename in test_filenames:
-        psnr, ssim = model.evaluate_bicubic(filename, print_console=False)
+        psnr, ssim, psnr_rgb, ssim_rgb = model.evaluate_bicubic(filename, print_console=False)
         total_psnr += psnr
         total_ssim += ssim
 
     logging.info("Bicubic Average [%s] PSNR:%f, SSIM:%f" % (
         test_data, total_psnr / len(test_filenames), total_ssim / len(test_filenames)))
         
-    return total_psnr, total_ssim
+    return total_psnr / len(test_filenames), total_ssim / len(test_filenames)
 
 def evaluate_model(model, test_data):
     test_filenames = util.get_files_in_directory(FLAGS.data_dir + "/" + test_data)

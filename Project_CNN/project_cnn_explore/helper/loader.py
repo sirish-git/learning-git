@@ -86,7 +86,7 @@ class BatchDataSets:
         self.batch_index = None
         self.patches_cnt = patches_cnt
         if self.patches_cnt == 0:
-            if self.scale == 2:
+            if self.scale <= 2:
                 self.patches_cnt = 150000
             else:
                 self.patches_cnt = 70000
@@ -108,12 +108,13 @@ class BatchDataSets:
         patches_cnt = self.patches_cnt
         
         # allocate memory for patches
-        pmem1 = self.batch_image_size * self.scale * self.batch_image_size * self.scale
+        hr_patch_dim = self.batch_image_size * self.scale
+        pmem1 = hr_patch_dim * hr_patch_dim
         patches_mem1 = patches_cnt * pmem1        
         self.true_images = np.zeros(
             shape=[patches_cnt+1500, self.batch_image_size * self.scale, self.batch_image_size * self.scale, 1],
             dtype=np.uint8)
-        logging.info("Allocated patches_cnt: {}, patches_mem1: {}".format(patches_cnt, patches_mem1))                    
+        logging.info("Allocated HR ({}x{}) patches_cnt: {}, patches_mem1: {}".format(hr_patch_dim, hr_patch_dim, patches_cnt, patches_mem1))                    
         
         # allocate memory for compressed low-resolution patches
         if self.compress_input_q > 1:
