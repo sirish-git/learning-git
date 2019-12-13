@@ -2154,10 +2154,10 @@ class SuperResolution(tf_graph.TensorflowGraph):
                 input_image = input_y_image
             else:
                 input_image_yuv = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                    alignment=self.scale, convert_ycbcr=True
-                input_image = input_image_yuv[:,:,0,1]
-                u_lr = input_image_yuv[:,:,1,2]
-                v_lr = input_image_yuv[:,:,2,3]
+                                                    alignment=self.scale, convert_ycbcr=True)
+                input_image = input_image_yuv[:,:,0:1]
+                u_lr = input_image_yuv[:,:,1:2]
+                v_lr = input_image_yuv[:,:,2:3]
                 
             true_image_y = util.convert_rgb_to_y(true_image)
         elif true_image.shape[2] == 1 and self.channels == 1:
