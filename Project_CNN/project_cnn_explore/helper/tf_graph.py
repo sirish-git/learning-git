@@ -54,7 +54,7 @@ class TensorflowGraph(tf.Graph):
         self.debug_print = flags.debug_print
 
         # Environment (all directory name should not contain '/' after )
-        self.checkpoint_dir = flags.checkpoint_dir + "/" + flags.arch_type
+        self.checkpoint_dir = flags.checkpoint_dir + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type
         self.tf_log_dir = flags.tf_log_dir   
 
         # status / attributes
