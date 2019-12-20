@@ -193,7 +193,7 @@ def compress_with_jpeg(true_image, compress_input_q, scale, resampling_method):
     # compress LR RGB image: Encode and decode
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_input_q]
     ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
-    dec_img = cv2.imdecode(enc_img, 1) 
+    dec_img = cv2.imdecode(enc_img, 1)
         
     # convert compressed LR RGB to YUV
     image_lr_yuv = convert_rgb_to_ycbcr(dec_img)

@@ -89,7 +89,7 @@ class BatchDataSets:
             if self.scale <= 2:
                 self.patches_cnt = 150000
             else:
-                self.patches_cnt = 70000
+                self.patches_cnt = 60000
         self.compress_input_q = compress_input_q
 
     def build_batch(self, data_dir):
@@ -120,7 +120,7 @@ class BatchDataSets:
         if self.compress_input_q > 1:
             pmem2 = self.batch_image_size * self.batch_image_size
             patches_mem2 = patches_cnt * pmem2
-            self.compress_images_lr_y = np.zeros(
+            self.compress_images_lr = np.zeros(
                 shape=[patches_cnt+1500, self.batch_image_size, self.batch_image_size, 1],
                 dtype=np.uint8)                   
             logging.info("Allocated compressed (y) patches_cnt: {}, patches_mem2: {}".format(patches_cnt, patches_mem2))    
@@ -166,7 +166,7 @@ class BatchDataSets:
                     image_hr_y = util.convert_rgb_to_y(batch_HR_rgb[i])
                     
                     # save compressed LR y images
-                    self.compress_images_lr_y[images_count] = image_lr_y    
+                    self.compress_images_lr[images_count] = image_lr_y    
                     # save uncompressed HR y image
                     self.true_images[images_count] = image_hr_y                                    
                     images_count += 1
@@ -184,10 +184,6 @@ class BatchDataSets:
                 input_count = true_batch_images.shape[0]
 
                 for i in range(input_count):
-                #    #self.save_input_batch_image(images_count, input_batch_images[i])
-                #    #self.save_interpolated_batch_image(images_count, input_interpolated_batch_images[i])
-                #    self.save_true_batch_image(images_count, true_batch_images[i])
-                            
                     self.true_images[images_count] = true_batch_images[i]                                    
                     images_count += 1
 
@@ -268,10 +264,10 @@ class BatchDataSets:
         if hasattr(self, 'true_images'):
             del self.true_images
             if self.compress_input_q > 1:
-                del self.compress_images_lr_y
+                del self.compress_images_lr
         self.true_images = None
         if self.compress_input_q > 1:
-            self.compress_images_lr_y = None
+            self.compress_images_lr = None
 
     # verify already created batch has same properties as batch requested in current training instance
     def is_batch_exist(self):
@@ -334,7 +330,7 @@ class BatchDataSets:
             
             # create input images (LR) from true image
             if self.compress_input_q > 1:
-                input_image = self.compress_images_lr_y[number]
+                input_image = self.compress_images_lr[number]
             else:
                 input_image = util.resize_image_by_pil(true_image, 1.0 / self.scale, resampling_method=self.resampling_method)
                 
