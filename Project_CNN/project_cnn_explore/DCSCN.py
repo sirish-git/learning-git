@@ -2008,7 +2008,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         # RGB-HR (bicubic): down-scaled and up-scaled image
         #util.save_image(output_directory + filename + "_input_bicubic" + extension, input_bicubic_image)
 
-        psnr_rgb = ssim_rgb = 0
+        psnr = ssim = psnr_rgb = ssim_rgb = 0
         if true_image.shape[2] == 3 and self.channels == 1:
 
             true_ycbcr_image = util.convert_rgb_to_ycbcr(true_image)        
@@ -2076,7 +2076,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
             util.save_image(output_directory + file_path, true_image)
             util.save_image(output_directory + filename + "_result" + extension, output_image)
         else:
-            return None, None
+            return None, None, None, None
 
         if print_console:
             logging.info("[%s] PSNR_Y  :%f, SSIM_Y  :%f" % (filename, psnr, ssim))
@@ -2088,7 +2088,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
 
         true_image = util.set_image_alignment(util.load_image(file_path, print_console=False), self.scale)
 
-        psnr_rgb = ssim_rgb = 0
+        psnr = ssim = psnr_rgb = ssim_rgb = 0
         if true_image.shape[2] == 3 and self.channels == 1:
 
             true_ycbcr_image = util.convert_rgb_to_ycbcr(true_image)                                                    
@@ -2135,7 +2135,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
             output_image = self.do(input_image, input_bicubic_y_image)
             psnr, ssim = util.compute_psnr_and_ssim(true_image, output_image, border_size=self.psnr_calc_border_size)
         else:
-            return None, None
+            return None, None, None, None
 
         if print_console:
             logging.info("[%s] PSNR_Y  :%f, SSIM_Y  :%f" % (file_path, psnr, ssim))
@@ -2145,6 +2145,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
 
     def evaluate_bicubic(self, file_path, print_console=False):
 
+        psnr = ssim = psnr_rgb = ssim_rgb = 0
         true_image = util.set_image_alignment(util.load_image(file_path, print_console=False), self.scale)
 
         if true_image.shape[2] == 3 and self.channels == 1:
@@ -2165,13 +2166,13 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                                    alignment=self.scale)
             true_image_y = true_image
         else:
-            return None, None
+            return None, None, None, None
 
         input_bicubic_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)
         psnr, ssim = util.compute_psnr_and_ssim(true_image_y, input_bicubic_image, border_size=self.psnr_calc_border_size)
 
-        psnr_rgb = ssim_rgb = 0
-        if true_image.shape[2] == 3 and self.channels == 1:
+        #print("true_image.shape:{}, input_image_yuv.shape: {}, u_lr.shape: {}, input_image.shape: {}, file_path: {}".format(true_image.shape, input_image_yuv.shape, u_lr.shape, input_image.shape, file_path))
+        if self.compress_input_q > 1 and true_image.shape[2] == 3 and self.channels == 1:
             # bicubic up-scale u, v channels
             u_hr = util.resize_image_by_pil(u_lr, self.scale, resampling_method=self.resampling_method)
             v_hr = util.resize_image_by_pil(v_lr, self.scale, resampling_method=self.resampling_method)        
