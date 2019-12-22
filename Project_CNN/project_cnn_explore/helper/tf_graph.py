@@ -54,7 +54,10 @@ class TensorflowGraph(tf.Graph):
         self.debug_print = flags.debug_print
 
         # Environment (all directory name should not contain '/' after )
-        self.checkpoint_dir = flags.checkpoint_dir + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type
+        if flags.compress_input_q > 0:
+            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_compressed" + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type
+        else:
+            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_uncompressed" + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type        
         self.tf_log_dir = flags.tf_log_dir   
 
         # status / attributes
