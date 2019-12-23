@@ -63,7 +63,13 @@ def main(not_parsed_args):
         elif FLAGS.arch_type == "v5_edge_concat":
             model.build_graph_v5_edge_concat() 
         elif FLAGS.arch_type == "v6_edge_concat":
-            model.build_graph_v6_edge_concat()     
+            model.build_graph_v6_edge_concat()    
+        elif FLAGS.arch_type == "v6_1_edge_concat":
+            model.build_graph_v6_1_edge_concat()             
+        elif FLAGS.arch_type == "v6_2_edge_concat":
+            model.build_graph_v6_2_edge_concat()   
+        elif FLAGS.arch_type == "v6_3_edge_concat":
+            model.build_graph_v6_3_edge_concat()              
         elif FLAGS.arch_type == "v7_edge_concat":
             model.build_graph_v7_edge_concat()  
         elif FLAGS.arch_type == "v7_1_edge_concat":
@@ -84,7 +90,7 @@ def main(not_parsed_args):
     model.init_all_variables()
 
     if FLAGS.test_dataset == "all":
-        test_list = ['set5', 'set14', 'bsd100', 'Urban100', 'bsd200', 'div2k_sample']
+        test_list = ['set5', 'set14', 'bsd100', 'Urban100', 'Manga109', 'bsd200', 'custom_test', 'div2k_sample']
     else:
         test_list = [FLAGS.test_dataset]
 
