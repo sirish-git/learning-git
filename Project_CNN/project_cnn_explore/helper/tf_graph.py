@@ -79,6 +79,20 @@ class TensorflowGraph(tf.Graph):
         self.checkpoint_dir = self.checkpoint_dir +  "_{}x_".format(scale) + "MAC-{}_".format(self.complexity_conv) + \
                               "{}".format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         util.make_dir(self.checkpoint_dir)
+        
+        # get all the code and training scripts corresponding to this model
+        files_in_path = util.get_py_files_in_directory('./')
+        files_in_helper = util.get_py_files_in_directory('./helper')
+        # create dir
+        util.make_dir(self.checkpoint_dir + '/' + 'code' + '/' + 'helper')
+        # copy python files in current folder
+        for file in files_in_path:
+            #print(file)
+            shutil.copy(file, self.checkpoint_dir + '/' + 'code') 
+        # copy python files in helper folder
+        for file in files_in_helper:
+            #print(file)
+            shutil.copy(file, self.checkpoint_dir + '/' + 'code' + '/' + 'helper')            
     
     def init_session(self, device_id=0):
         config = tf.ConfigProto()

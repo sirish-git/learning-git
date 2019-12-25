@@ -68,6 +68,11 @@ def get_files_in_directory(path):
     file_list = [path + f for f in listdir(path) if (isfile(join(path, f)) and not f.startswith('.'))]
     return file_list
 
+def get_py_files_in_directory(path):
+    if not path.endswith('/'):
+        path = path + "/"
+    file_list = [path + f for f in listdir(path) if (isfile(join(path, f)) and f.endswith('.py') and not f.startswith('.'))]
+    return file_list    
 
 def remove_generic(path, __func__):
     try:
