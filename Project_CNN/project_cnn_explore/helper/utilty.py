@@ -193,15 +193,21 @@ def compress_with_jpeg(true_image, compress_input_q, scale, resampling_method):
     # compress LR RGB image: Encode and decode
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_input_q]
     ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
-    dec_img = cv2.imdecode(enc_img, 1)
+    if len(true_image.shape) == 3 and true_image.shape[2] == 3:
+        # color image decoding
+        dec_img = cv2.imdecode(enc_img, 1)
         
-    # convert compressed LR RGB to YUV
-    image_lr_yuv = convert_rgb_to_ycbcr(dec_img)
-    input_y_image = image_lr_yuv[:,:,0:1]
-    u_lr = image_lr_yuv[:,:,1:2]
-    v_lr = image_lr_yuv[:,:,2:3]
-
-    return input_y_image, u_lr, v_lr
+        # convert compressed LR RGB to YUV
+        image_lr_yuv = convert_rgb_to_ycbcr(dec_img)
+        input_y_image = image_lr_yuv[:,:,0:1]
+        u_lr = image_lr_yuv[:,:,1:2]
+        v_lr = image_lr_yuv[:,:,2:3]
+    
+        return input_y_image, u_lr, v_lr        
+    else:
+        # monochrome image decoding
+        dec_img = cv2.imdecode(enc_img, 0)            
+        return dec_img, None, None
 
 def set_image_alignment(image, alignment):
     alignment = int(alignment)
