@@ -95,19 +95,14 @@ def train(model, flags, trial):
             avg_psnr_Y = avg_ssim_Y = avg_psnr_rgb = avg_ssim_rgb = 0
             file_cnt = 0
             for filename in test_files:
-                true_image = util.set_image_alignment(util.load_image(filename, print_console=False), model.scale)
-                #print("filename: {}, shape: {}".format(filename, true_image.shape))
-                if true_image.shape[2] != 3:
-                    #print("1-channel image: filename: {}, shape: {}".format(filename, true_image.shape))
-                    continue
                 file_cnt += 1
                 psnr_Y, ssim_Y, psnr_rgb, ssim_rgb = model.evaluate_bicubic(filename)
                 avg_psnr_Y += psnr_Y
                 avg_ssim_Y += ssim_Y
                 avg_psnr_rgb += psnr_rgb
                 avg_ssim_rgb += ssim_rgb                
-                #print("id:{}, filename: {}, psnr_Y:{:.3f}, ssim_Y:{:.3f}, psnr_rgb:{:.3f}, ssim_rgb:{:.3f}".format(file_cnt, filename, psnr_Y, ssim_Y, psnr_rgb, ssim_rgb))
-            logging.info("{:16s}: psnr_Y={:.3f}, ssim_Y={:.3f}, psnr_RGB={:.3f}, ssim_RGB={:.3f}".format(test_set, avg_psnr_Y/file_cnt, avg_ssim_Y/file_cnt, avg_psnr_rgb/file_cnt, avg_ssim_rgb/file_cnt))           
+                #print("psnr_Y:{:.3f}, ssim_Y:{:.4f}, psnr_rgb:{:.3f}, ssim_rgb:{:.4f}, filename: {}".format(psnr_Y, ssim_Y, psnr_rgb, ssim_rgb, filename))
+            logging.info("{:16s}: psnr_Y={:.3f}, ssim_Y={:.4f}, psnr_RGB={:.3f}, ssim_RGB={:.4f} #file_cnt: {}".format(test_set, avg_psnr_Y/file_cnt, avg_ssim_Y/file_cnt, avg_psnr_rgb/file_cnt, avg_ssim_rgb/file_cnt, file_cnt))           
 
     # Training loop
     logging.info("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))

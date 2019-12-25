@@ -2392,10 +2392,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif true_image.shape[2] == 1 and self.channels == 1:
 
             # for monochrome images
-            input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                   alignment=self.scale)
-            input_bicubic_y_image = util.resize_image_by_pil(input_image, self.scale,
-                                                             resampling_method=self.resampling_method)
+            if self.compress_input_q > 1:
+                input_image, u_lr, v_lr = util.compress_with_jpeg(true_image, self.compress_input_q, self.scale, self.resampling_method)
+            else:
+                input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale, alignment=self.scale)
+            input_bicubic_y_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)
             output_image = self.do(input_image, input_bicubic_y_image)
             psnr, ssim = util.compute_psnr_and_ssim(true_image, output_image, border_size=self.psnr_calc_border_size)
             util.save_image(output_directory + file_path, true_image)
@@ -2453,10 +2454,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif true_image.shape[2] == 1 and self.channels == 1:
 
             # for monochrome images
-            input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                   alignment=self.scale)
-            input_bicubic_y_image = util.resize_image_by_pil(input_image, self.scale,
-                                                             resampling_method=self.resampling_method)
+            if self.compress_input_q > 1:
+                input_image, u_lr, v_lr = util.compress_with_jpeg(true_image, self.compress_input_q, self.scale, self.resampling_method)
+            else:            
+                input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale, alignment=self.scale)
+            input_bicubic_y_image = util.resize_image_by_pil(input_image, self.scale, resampling_method=self.resampling_method)
             output_image = self.do(input_image, input_bicubic_y_image)
             psnr, ssim = util.compute_psnr_and_ssim(true_image, output_image, border_size=self.psnr_calc_border_size)
         else:
@@ -2487,8 +2489,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
                 
             true_image_y = util.convert_rgb_to_y(true_image)
         elif true_image.shape[2] == 1 and self.channels == 1:
-            input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale,
-                                                   alignment=self.scale)
+            # for monochrome images
+            if self.compress_input_q > 1:
+                input_image, u_lr, v_lr = util.compress_with_jpeg(true_image, self.compress_input_q, self.scale, self.resampling_method)
+            else:            
+                input_image = loader.build_input_image(true_image, channels=self.channels, scale=self.scale, alignment=self.scale)
             true_image_y = true_image
         else:
             return None, None, None, None
