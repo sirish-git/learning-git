@@ -72,6 +72,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.initial_lr = flags.initial_lr
         self.lr_decay = flags.lr_decay
         self.lr_decay_epoch = flags.lr_decay_epoch
+        # warm_up lr params
         self.warm_up = flags.warm_up
         self.warm_up_lr = flags.warm_up_lr
         # number of batches with given train images, batch_num and warmp epochs
@@ -87,6 +88,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         # Image Processing Parameters
         self.max_value = flags.max_value
         self.channels = flags.channels
+        # make input and output channels count same
         self.output_channels = 1
         self.psnr_calc_border_size = flags.psnr_calc_border_size
         if self.psnr_calc_border_size < 0:
@@ -323,6 +325,39 @@ class SuperResolution(tf_graph.TensorflowGraph):
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)					
 
+    # 1x3 and 3x1 layers followed by conv layer in each branch and concatanate    
+    def edge_synth_block_type1(self, inp, i, inp_ch, out_ch):
+        # conv        
+        i = i + 1
+        out1 = self.build_conv("CNN%d" % (i), inp, 1, 3, inp_ch, out_ch, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                   
+        # conv dep sep
+        i = i + 1
+        out1_1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, out_ch, out_ch, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # conv        
+        i = i + 1
+        out2 = self.build_conv("CNN%d" % (i), inp, 3, 1, inp_ch, out_ch, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                           
+                     
+        # conv dep sep
+        i = i + 1
+        out2_2 = self.build_depthwise_separable_conv("CNN%d" % (i), out2, 3, 3, out_ch, out_ch, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                 
+        # concat
+        out3 = tf.concat((out1_1, out2_2), 3, name="feature_concat") 
+
+        # conv dep sep
+        i = i + 1
+        out4 = self.build_depthwise_separable_conv("CNN%d" % (i), out3, 3, 3, out_ch*2, out_ch*2, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+                               
+        return out4, i
+
+                
     '''
     # Architecture description:
     # Model released to AI Zoom
@@ -865,6 +900,175 @@ class SuperResolution(tf_graph.TensorflowGraph):
         if self.save_weights:
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+                
+    def build_graph_v5_1_edge_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+            
+        # conv    
+        i = i + 1        
+        out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
+                               
+        # edge synthesis block
+        out5, i = self.edge_synth_block_type1(out1, i, 16, 8)
+                       
+        # concat
+        out6 = tf.concat((out1, out5), 3, name="feature_concat")    
+        
+        # conv dep sep
+        i = i + 1
+        out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out6, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+
+        # edge synthesis block
+        out9, i = self.edge_synth_block_type1(out7, i, 16, 8)     
+     
+        # concat
+        out10 = tf.concat((out7, out9), 3, name="feature_concat")        
+        
+        # dimension reduction
+        # [1x1x24x16]  
+        out_ch_num = 32    
+        i = i + 1
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+                                                  
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)
+        # [3x3x16x8]
+        i = i + 1
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+ 
+    def build_graph_v5_2_edge_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+            
+        # conv    
+        i = i + 1        
+        out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
+                               
+        # edge synthesis block
+        out5, i = self.edge_synth_block_type1(out1, i, 16, 8)
+                       
+        # concat
+        out10 = tf.concat((out1, out5), 3, name="feature_concat")    
+        
+        # more edge synthesis blocks
+        for j in range(4):
+            # conv dep sep
+            i = i + 1
+            out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+    
+            # edge synthesis block
+            out9, i = self.edge_synth_block_type1(out7, i, 16, 8)     
+        
+            # concat
+            out10 = tf.concat((out7, out9), 3, name="feature_concat")        
+        
+        # dimension reduction
+        # [1x1x24x16]  
+        out_ch_num = 32    
+        i = i + 1
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+                                                  
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)
+        
+        # conv
+        #i = i + 1
+        #out12 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, inp_ch_num, use_bias=True, activator=self.activator,
+        #                       use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+                               
+        # [3x3x16x8]
+        i = i + 1
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+ 
 
     '''
     # Similar to v3 and inspired from v5
@@ -1849,12 +2053,82 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
 
         # global residual
+        out8 = tf.add(self.H[-1], self.x2, name="output")
+
+        # conv after residual
+        i = i + 1
+        self.y_ = self.build_conv("CNN%d" % (i), out8, 5, 5, 1, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+                               
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+ 
+    '''
+    # Arch suggested by Nitchith
+    '''
+    def build_graph_v33_edge_concat(self):
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out0 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+
+        # conv dep-sep      
+        i = i + 1
+        out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out0, 3, 3, 8, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # conv dep-sep      
+        out_ch_num = 16
+        i = i + 1
+        out2 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                      
+                                                  
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out6 = out2
+        else:
+            # for SR network          
+            out6 = tf.depth_to_space(out2, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+        
+        # [3x3x16x8]
+        i = i + 1
+        out7 = self.build_conv("CNN%d" % (i), out6, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
         self.y_ = tf.add(self.H[-1], self.x2, name="output")
 
         if self.save_weights:
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
-                                
+ 
         
     # Complex model
     def build_graph_v20_edge_concat(self):
@@ -1981,7 +2255,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif self.arch_type == "v4_edge_concat":
             self.build_graph_v4_edge_concat()        
         elif self.arch_type == "v5_edge_concat":
-            self.build_graph_v5_edge_concat()               
+            self.build_graph_v5_edge_concat()   
+        elif self.arch_type == "v5_1_edge_concat":
+            self.build_graph_v5_1_edge_concat()    
+        elif self.arch_type == "v5_2_edge_concat":
+            self.build_graph_v5_2_edge_concat()                
         elif self.arch_type == "v6_edge_concat":
             self.build_graph_v6_edge_concat()  
         elif self.arch_type == "v6_1_edge_concat":
@@ -2001,7 +2279,9 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif self.arch_type == "v9_edge_concat":
             self.build_graph_v9_edge_concat()     
         elif self.arch_type == "v9_1_edge_concat":
-            self.build_graph_v9_1_edge_concat()             
+            self.build_graph_v9_1_edge_concat()    
+        elif self.arch_type == "v33_edge_concat":
+            self.build_graph_v33_edge_concat()               
         else:
             print("CNN Architecture name not supported, select supported architecture")
             
