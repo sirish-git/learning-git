@@ -62,13 +62,16 @@ def train(model, flags, trial):
     if len(test_filenames) <= 0:
         print("Can't load images from [%s]" % (flags.data_dir + "/" + flags.test_dataset))
         exit()        
-    
-    # create model directory
-    model.create_model_dir()
-    
+        
     model.init_all_variables()
     if flags.load_model_name != "":
+        # copy the log file to model file
+        shutil.copy(model.checkpoint_dir + "/" + FLAGS.log_filename, "./")
+        # restore trained model for further training
         model.load_model(flags.load_model_name, output_log=True)
+    else:
+        # create model directory
+        model.create_model_dir()
 
     model.init_train_step()
     model.init_epoch_index()

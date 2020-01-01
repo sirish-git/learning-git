@@ -53,11 +53,18 @@ class TensorflowGraph(tf.Graph):
         self.log_weight_image_num = 32
         self.debug_print = flags.debug_print
 
-        # Environment (all directory name should not contain '/' after )
+        # Environment (all directory name should not contain '/' after )       
         if flags.compress_input_q > 0:
-            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_compressed" + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type
+            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_compressed" + "/" + "{}x".format(flags.scale) + "/"
         else:
-            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_uncompressed" + "/" + "{}x".format(flags.scale) + "/" + flags.arch_type        
+            self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_uncompressed" + "/" + "{}x".format(flags.scale) + "/"
+        if flags.restore_model_dir == "": 
+            # add architecture name
+            self.checkpoint_dir += flags.arch_type
+        else:
+            # append restore model directory
+            self.checkpoint_dir += flags.restore_model_dir
+            
         self.tf_log_dir = flags.tf_log_dir   
 
         # status / attributes

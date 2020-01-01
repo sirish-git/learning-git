@@ -87,6 +87,7 @@ flags.DEFINE_boolean("build_batch", True, "Build pre-processed input batch. Make
 
 # Environment (all directory name should not contain '/' after )
 flags.DEFINE_string("checkpoint_dir", "models", "Directory for checkpoints")
+flags.DEFINE_string("restore_model_dir", "", "Directory for checkpoints")
 flags.DEFINE_string("graph_dir", "graphs", "Directory for graphs")
 flags.DEFINE_string("data_dir", "data", "Directory for original images")
 flags.DEFINE_string("batch_dir", "batch_data", "Directory for training batch images")
