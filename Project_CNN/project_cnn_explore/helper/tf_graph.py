@@ -124,7 +124,8 @@ class TensorflowGraph(tf.Graph):
         elif activator == "tanh":
             output = tf.nn.tanh(input_tensor, name=base_name + "_tanh")
         elif activator == "leaky_relu":
-            output = tf.maximum(input_tensor, leaky_relu_alpha * input_tensor, name=base_name + "_leaky")
+            #output = tf.maximum(input_tensor, leaky_relu_alpha * input_tensor, name=base_name + "_leaky")
+            output = tf.nn.leaky_relu(input_tensor, name=base_name + "_leaky")
         elif activator == "prelu":
             with tf.variable_scope("prelu"):
                 alphas = tf.Variable(tf.constant(0.1, shape=[features]), name=base_name + "_prelu")
@@ -133,6 +134,15 @@ class TensorflowGraph(tf.Graph):
                 output = tf.nn.relu(input_tensor) + tf.multiply(alphas, (input_tensor - tf.abs(input_tensor))) * 0.5
         elif activator == "selu":
             output = tf.nn.selu(input_tensor, name=base_name + "_selu")
+        elif activator == "swish":
+            output = tf.nn.swish(input_tensor)#, name=base_name + "_swish")            
+        elif activator == "custom":
+            with tf.variable_scope("prelu"):
+                alphas = tf.Variable(tf.constant(0.1, shape=[features]), name=base_name + "_prelu")
+                betas = tf.Variable(tf.constant(1.0, shape=[features]), name=base_name + "_prelu1")
+                if self.save_weights:
+                    util.add_summaries("prelu_alpha", self.name, alphas, save_stddev=False, save_mean=False)
+                output = tf.multiply(betas, tf.nn.relu(input_tensor)) + tf.multiply(alphas, (input_tensor - tf.abs(input_tensor))) * 0.5
         else:
             raise NameError('Not implemented activator:%s' % activator)
 

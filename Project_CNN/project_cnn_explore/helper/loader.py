@@ -195,8 +195,8 @@ class BatchDataSets:
             if processed_images % 10 == 0:
                 print('.', end='', flush=True)
 
-        logging.info("Finished batch creation.")
-        logging.info(" --- processed images: ".format(processed_images))        
+        logging.info(" ... Finished batch creation.")
+        logging.info(" ... Processed images count: {}".format(processed_images))        
         self.count = images_count
 
         logging.info("%d mini-batch images are built(saved).\n" % images_count)

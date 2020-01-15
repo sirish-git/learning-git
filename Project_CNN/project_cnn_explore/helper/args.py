@@ -30,7 +30,7 @@ flags.DEFINE_integer("cnn_size", 3, "Size of CNN filters")
 flags.DEFINE_integer("reconstruct_layers", 1, "Number of Reconstruct CNN Layers. (can be 0.)")
 flags.DEFINE_integer("reconstruct_filters", 32, "Number of Reconstruct CNN Filters")
 flags.DEFINE_float("dropout_rate", 1.0, "Output nodes should be kept by this probability. If 1, don't use dropout.")
-flags.DEFINE_string("activator", "prelu", "Activator can be [relu, leaky_relu, prelu, sigmoid, tanh, selu]")
+flags.DEFINE_string("activator", "prelu", "Activator can be [relu, leaky_relu, prelu, sigmoid, tanh, selu, swish, custom]")
 flags.DEFINE_boolean("pixel_shuffler", True, "Use Pixel Shuffler instead of transposed CNN")
 flags.DEFINE_integer("pixel_shuffler_filters", 0,
                      "Num of Pixel Shuffler output channels. 0 means use same channels as input.")
@@ -62,6 +62,7 @@ flags.DEFINE_float("lr_decay", 0.75, "Learning rate decay rate")
 flags.DEFINE_integer("lr_decay_epoch", 10, "After this epochs are completed, learning rate will be decayed by lr_decay.")
 flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current learning rate gets lower than this"
                                    "value, then training will be finished.")
+# warmup learning rate                                   
 flags.DEFINE_integer("warm_up", 0, "Enable warmup learning at start of training.")
 flags.DEFINE_float("warm_up_lr", 0.0002, "Initial warmpup learning rate to make smaller steps @each batch towards optimal")
 flags.DEFINE_integer("warm_up_epochs", 5, "Number of epochs for warmpup learning at start of the training.")
