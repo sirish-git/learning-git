@@ -87,9 +87,9 @@ class BatchDataSets:
         self.patches_cnt = patches_cnt
         if self.patches_cnt == 0:
             if self.scale <= 2:
-                self.patches_cnt = 150000
+                self.patches_cnt = 200000
             else:
-                self.patches_cnt = 60000
+                self.patches_cnt = 150000
         self.compress_input_q = compress_input_q
 
     def build_batch(self, data_dir):

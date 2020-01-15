@@ -292,6 +292,75 @@ class TensorflowGraph(tf.Graph):
         return h
 
 
+    def conv2d_atrous(self, input_tensor, w, dilate_stride, bias=None, use_batch_norm=False, name=""):
+        
+        output = tf.nn.atrous_conv2d(input_tensor, w, rate=dilate_stride, padding="SAME", name=name + "_conv")
+        
+        # compute complexity
+        # number of pixels
+        ph = self.pix_per_input #input_tensor.get_shape().as_list()[1] // self.patch_size
+        pw = self.pix_per_input #input_tensor.get_shape().as_list()[2] // self.patch_size
+        # pw*ph*kw*kh*inpCh*outCh
+        mac                   = pw * ph * int(w.shape[0] * w.shape[1] * w.shape[2] * w.shape[3])        
+        self.complexity      += mac
+        self.complexity_conv += mac
+        # append statistics
+        self.complexity_conv_param.append("Dil: {} x {} x {} x {} x {:3d} x {:3d}".format(pw, ph, w.shape[0], w.shape[1], int(w.shape[2]), int(w.shape[3])))		
+        self.complexity_conv_mac.append(mac)
+
+        if bias is not None:
+            output = tf.add(output, bias, name=name + "_add")
+            self.complexity += self.pix_per_input * int(bias.shape[0])
+
+        if use_batch_norm:
+            output = tf.layers.batch_normalization(output, training=self.is_training, name='BN')
+
+        return output
+
+    def build_conv_atrous(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
+                   activator=None, use_batch_norm=False, dropout_rate=1.0, append_new_list=False, dilate_stride=2):
+        with tf.variable_scope(name):
+            w = util.weight([k_h, k_w, input_feature_num, output_feature_num],
+                            stddev=self.weight_dev, name="conv_W", initializer=self.initializer)
+
+            b = util.bias([output_feature_num], name="conv_B") if use_bias else None
+            h = self.conv2d_atrous(input_tensor, w, dilate_stride, bias=b, use_batch_norm=use_batch_norm, name=name)
+
+            if activator is not None:
+                h = self.build_activator(h, output_feature_num, activator, base_name=name)
+
+            if dropout_rate < 1.0:
+                h = tf.nn.dropout(h, self.dropout, name="dropout")
+
+            if(append_new_list == True):
+                self.H_new.append(h)	
+            else:
+                self.H.append(h)
+
+            if self.save_weights:
+                util.add_summaries("weight", self.name, w, save_stddev=True, save_mean=True)
+                util.add_summaries("output", self.name, h, save_stddev=True, save_mean=True)
+                if use_bias:
+                    util.add_summaries("bias", self.name, b, save_stddev=True, save_mean=True)
+
+            if self.save_images and k_w >= 1 and k_h >= 1:
+                util.log_cnn_weights_as_images(self.name, w, max_outputs=self.save_images_num)
+
+        if self.receptive_fields == 0:
+            self.receptive_fields = k_w
+        else:
+            self.receptive_fields += (k_w - 1)
+        self.features += "%d " % output_feature_num
+
+        #if(append_new_list == False):		
+        self.Weights.append(w)
+        if use_bias:
+            self.Biases.append(b)
+
+        return h
+        
+        
+        
     def build_transposed_conv(self, name, input_tensor, scale, channels):
         with tf.variable_scope(name):
             w = util.upscale_weight(scale=scale, channels=channels, name="Tconv_W")

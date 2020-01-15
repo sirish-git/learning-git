@@ -61,11 +61,17 @@ def main(not_parsed_args):
         elif FLAGS.arch_type == "v4_edge_concat":
             model.build_graph_v4_edge_concat()    
         elif FLAGS.arch_type == "v5_edge_concat":
-            model.build_graph_v5_edge_concat() 
-        elif FLAGS.arch_type == "v5_1_edge_concat":
-            model.build_graph_v5_1_edge_concat()       
-        elif FLAGS.arch_type == "v5_2_edge_concat":
-            model.build_graph_v5_2_edge_concat()                
+            model.build_graph_v5_edge_concat()  
+        elif FLAGS.arch_type == "v5_rzn":
+            model.build_graph_v5_rzn()
+        elif FLAGS.arch_type == "v5_rzn_l":
+            model.build_graph_v5_rzn_l()            
+        elif FLAGS.arch_type == "v5_rzn_ul":
+            model.build_graph_v5_rzn_ul()                   
+        elif FLAGS.arch_type == "v5_3_edge_concat":
+            model.build_graph_v5_3_edge_concat()        
+        elif FLAGS.arch_type == "v5_4_edge_concat":
+            model.build_graph_v5_4_edge_concat()              
         elif FLAGS.arch_type == "v6_edge_concat":
             model.build_graph_v6_edge_concat()    
         elif FLAGS.arch_type == "v6_1_edge_concat":

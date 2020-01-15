@@ -326,37 +326,111 @@ class SuperResolution(tf_graph.TensorflowGraph):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)					
 
     # 1x3 and 3x1 layers followed by conv layer in each branch and concatanate    
-    def edge_synth_block_type1(self, inp, i, inp_ch, out_ch):
+    def edge_synth_block_type1(self, inp, i, edge_layers=1, inp_ch=16, out_ch_middle=8, out_ch_final=16, normal_conv_branch=0):
+    
+        if normal_conv_branch==1:
+            # conv        
+            i = i + 1
+            out100 = self.build_depthwise_separable_conv("CNN%d" % (i), inp, 3, 3, inp_ch, out_ch_middle, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)        
+            i = i + 1
+            out101 = self.build_depthwise_separable_conv("CNN%d" % (i), out100, 3, 3, out_ch_middle, out_ch_middle, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)            
+    
         # conv        
         i = i + 1
-        out1 = self.build_conv("CNN%d" % (i), inp, 1, 3, inp_ch, out_ch, use_bias=True, activator=self.activator,
+        out1 = self.build_conv("CNN%d" % (i), inp, 1, 3, inp_ch, out_ch_middle, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
-                   
+        # edge layers (M in paper)
+        for j in range(edge_layers-1):
+            out1 = self.build_conv("CNN%d" % (i), out1, 1, 3, out_ch_middle, out_ch_middle, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
         # conv dep sep
         i = i + 1
-        out1_1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, out_ch, out_ch, use_bias=True, activator=self.activator,
+        out1_1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, out_ch_middle, out_ch_middle, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                                
         # conv        
         i = i + 1
-        out2 = self.build_conv("CNN%d" % (i), inp, 3, 1, inp_ch, out_ch, use_bias=True, activator=self.activator,
+        out2 = self.build_conv("CNN%d" % (i), inp, 3, 1, inp_ch, out_ch_middle, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                           
+        # edge layers (M in paper)
+        for j in range(edge_layers-1):
+            out2 = self.build_conv("CNN%d" % (i), out2, 3, 1, out_ch_middle, out_ch_middle, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                     
                      
         # conv dep sep
         i = i + 1
-        out2_2 = self.build_depthwise_separable_conv("CNN%d" % (i), out2, 3, 3, out_ch, out_ch, use_bias=True, activator=self.activator,
+        out2_2 = self.build_depthwise_separable_conv("CNN%d" % (i), out2, 3, 3, out_ch_middle, out_ch_middle, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                  
         # concat
-        out3 = tf.concat((out1_1, out2_2), 3, name="feature_concat") 
-
+        inp_chn = out_ch_middle*2
+        if normal_conv_branch==1:
+            inp_chn = out_ch_middle*3
+            out3 = tf.concat((out1_1, out2_2, out101), 3, name="feature_concat") 
+        else:
+            out3 = tf.concat((out1_1, out2_2), 3, name="feature_concat") 
+        
         # conv dep sep
         i = i + 1
-        out4 = self.build_depthwise_separable_conv("CNN%d" % (i), out3, 3, 3, out_ch*2, out_ch*2, use_bias=True, activator=self.activator,
+        out4 = self.build_depthwise_separable_conv("CNN%d" % (i), out3, 3, 3, inp_chn, out_ch_final, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                
         return out4, i
 
+    # 1x3 and 3x1 layers followed by conv layer in each branch and concatanate    
+    def edge_synth_block_type2(self, inp, i, inp_ch, out_ch, kh, kw, layer_type='conv_dep_sep'):
+    
+        if layer_type=='conv_dep_sep':
+            # conv        
+            i = i + 1
+            out1 = self.build_conv_atrous("CNN%d" % (i), inp, kh, kw, inp_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4) 
+                    
+            # conv
+            i = i + 1
+            out1_1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, kh, kw, out_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                                
+            # conv        
+            i = i + 1
+            out1_2 = self.build_depthwise_separable_conv("CNN%d" % (i), out1_1, kh, kw, out_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                                
+                    
+            # concat
+            out3 = tf.concat((out1, out1_2), 3, name="feature_concat") 
+    
+            # conv dep sep
+            i = i + 1
+            out4 = self.build_depthwise_separable_conv("CNN%d" % (i), out3, kh, kw, out_ch*2, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+        elif layer_type=='conv_normal':
+            # conv        
+            i = i + 1
+            out1 = self.build_conv_atrous("CNN%d" % (i), inp, kh, kw, inp_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4) 
+                    
+            # conv
+            i = i + 1
+            out1_1 = self.build_conv("CNN%d" % (i), out1, kh, kw, out_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                                
+            # conv        
+            i = i + 1
+            out1_2 = self.build_conv("CNN%d" % (i), out1_1, kh, kw, out_ch, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                                
+                    
+            # concat
+            out3 = tf.concat((out1, out1_2), 3, name="feature_concat") 
+    
+            # conv dep sep
+            i = i + 1
+            out4 = self.build_conv("CNN%d" % (i), out3, kh, kw, out_ch*2, out_ch, use_bias=True, activator=self.activator,
+                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+                                
+        return out4, i        
                 
     '''
     # Architecture description:
@@ -901,7 +975,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
                 
-    def build_graph_v5_1_edge_concat(self):
+    def build_graph_v5_rzn_l(self):
 
         self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
         self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
@@ -922,19 +996,19 @@ class SuperResolution(tf_graph.TensorflowGraph):
         if self.save_weights:
             with tf.name_scope("X"):
                 util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
-
-        # conv    
-        i = i + 1        
-        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
-                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
             
+        # conv    
+        i = i + 1    
+        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                        
+                
         # conv    
         i = i + 1        
         out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
                                
         # edge synthesis block
-        out5, i = self.edge_synth_block_type1(out1, i, 16, 8)
+        out5, i = self.edge_synth_block_type1(out1, i, edge_layers=1, inp_ch=16, out_ch_middle=8, out_ch_final=16, normal_conv_branch=0)
                        
         # concat
         out6 = tf.concat((out1, out5), 3, name="feature_concat")    
@@ -945,16 +1019,19 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
 
         # edge synthesis block
-        out9, i = self.edge_synth_block_type1(out7, i, 16, 8)     
+        out9, i = self.edge_synth_block_type1(out7, i, edge_layers=1, inp_ch=16, out_ch_middle=8, out_ch_final=16, normal_conv_branch=0)        
      
         # concat
         out10 = tf.concat((out7, out9), 3, name="feature_concat")        
+        inp_ch = 32
         
         # dimension reduction
         # [1x1x24x16]  
         out_ch_num = 32    
+        if self.scale == 3:   
+            out_ch_num = 36        
         i = i + 1
-        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, inp_ch, out_ch_num, use_bias=True, activator=self.activator,
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
@@ -980,8 +1057,91 @@ class SuperResolution(tf_graph.TensorflowGraph):
         if self.save_weights:
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
- 
-    def build_graph_v5_2_edge_concat(self):
+
+    def build_graph_v5_rzn_ul(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1    
+        out1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                        
+                
+        # conv    
+        i = i + 1        
+        out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
+                               
+        # edge synthesis block
+        out5, i = self.edge_synth_block_type1(out1, i, edge_layers=1, inp_ch=8, out_ch_middle=8, out_ch_final=8, normal_conv_branch=0)
+                       
+        # concat
+        out6 = tf.concat((out1, out5), 3, name="feature_concat")    
+        
+        # conv dep sep
+        i = i + 1
+        out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out6, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+
+        # edge synthesis block
+        out9, i = self.edge_synth_block_type1(out7, i, edge_layers=1, inp_ch=8, out_ch_middle=4, out_ch_final=8, normal_conv_branch=0)
+     
+        # concat
+        out10 = tf.concat((out7, out9), 3, name="feature_concat")        
+        
+        # dimension reduction
+        # [1x1x24x16]  
+        out_ch_num = 32 
+        if self.scale == 3:   
+            out_ch_num = 36
+        i = i + 1
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 16, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+                                                  
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)
+        # [3x3x16x8]
+        i = i + 1
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+                
+                
+    def build_graph_v5_rzn(self):
 
         self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
         self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
@@ -1012,31 +1172,47 @@ class SuperResolution(tf_graph.TensorflowGraph):
         i = i + 1        
         out1 = self.build_depthwise_separable_conv("CNN%d" % (i), out1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
-                               
+               
         # edge synthesis block
-        out5, i = self.edge_synth_block_type1(out1, i, 16, 8)
+        # M = 2
+        out5, i = self.edge_synth_block_type1(out1, i, edge_layers=2, inp_ch=16, out_ch_middle=16, out_ch_final=16, normal_conv_branch=1)
                        
         # concat
-        out10 = tf.concat((out1, out5), 3, name="feature_concat")    
+        out10 = tf.concat((out1, out5), 3, name="feature_concat") 
         
         # more edge synthesis blocks
-        for j in range(4):
+        num_esb = 2
+        inp_ch = 32
+        for j in range(num_esb):
             # conv dep sep
             i = i + 1
-            out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, 16, use_bias=True, activator=self.activator,
-                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
     
             # edge synthesis block
-            out9, i = self.edge_synth_block_type1(out7, i, 16, 8)     
+            if j < (num_esb - 1):
+                out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)             
+                out9, i = self.edge_synth_block_type1(out7, i, edge_layers=1, inp_ch=16, out_ch_middle=16, out_ch_final=16, normal_conv_branch=1)
+            else:
+                # last block
+                out7 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                 
+                out9, i = self.edge_synth_block_type1(out7, i, edge_layers=1, inp_ch=16, out_ch_middle=16, out_ch_final=32, normal_conv_branch=1)
+                inp_ch = 48
         
             # concat
-            out10 = tf.concat((out7, out9), 3, name="feature_concat")        
+            out10 = tf.concat((out7, out9), 3, name="feature_concat")                       
+        
+        # concat features from 1st esb
+        #inp_ch += 16
+        #out10 = tf.concat((out10, out5), 3, name="feature_concat")
         
         # dimension reduction
         # [1x1x24x16]  
-        out_ch_num = 32    
+        out_ch_num = 48   
+        if self.scale == 3:        
+            out_ch_num = 45
         i = i + 1
-        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, inp_ch, out_ch_num, use_bias=True, activator=self.activator,
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
                                                   
         # building upsampling layer
@@ -1050,12 +1226,7 @@ class SuperResolution(tf_graph.TensorflowGraph):
         self.pix_per_input = self.scale
         
         # compute the channels appropriately based on scale and depth2space        
-        inp_ch_num = out_ch_num // (self.scale * self.scale)
-        
-        # conv
-        #i = i + 1
-        #out12 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, inp_ch_num, use_bias=True, activator=self.activator,
-        #                       use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
                                
         # [3x3x16x8]
         i = i + 1
@@ -1068,7 +1239,302 @@ class SuperResolution(tf_graph.TensorflowGraph):
         if self.save_weights:
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+
+    '''
+    # Separate branches for horz, vert, horz+vert synthesis blocks
+    '''
+    def build_graph_v5_3_edge_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out_1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+        # conv    
+        i = i + 1        
+        out_11 = self.build_depthwise_separable_conv("CNN%d" % (i), out_1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # conv atrous   
+        i = i + 1        
+        out_2 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2)
+        # conv atrous   
+        i = i + 1        
+        out_21 = self.build_depthwise_separable_conv("CNN%d" % (i), out_2, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)
+                            
+        # conv atrous   
+        i = i + 1        
+        out_4 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)
+        # conv atrous   
+        i = i + 1        
+        out_41 = self.build_depthwise_separable_conv("CNN%d" % (i), out_4, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)
+                            
+        # conv atrous   
+        i = i + 1        
+        out_8 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=8)
  
+        # conv atrous   
+        i = i + 1        
+        out_81 = self.build_depthwise_separable_conv("CNN%d" % (i), out_8, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)
+                                    
+        # concat
+        out_12 = tf.concat((out_11, out_21), 3, name="feature_concat") 
+        out_48 = tf.concat((out_41, out_81), 3, name="feature_concat")
+
+        # conv dep-sep
+        i = i + 1
+        out_100 = self.build_depthwise_separable_conv("CNN%d" % (i), out_12, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        # conv atrous
+        i = i + 1
+        out_101 = self.build_conv_atrous("CNN%d" % (i), out_100, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2) 
+                               
+        # conv dep-sep
+        i = i + 1
+        out_200 = self.build_depthwise_separable_conv("CNN%d" % (i), out_48, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+        # conv atrous                               
+        i = i + 1
+        out_201 = self.build_conv_atrous("CNN%d" % (i), out_200, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)  
+
+        # concat
+        out3 = tf.concat((out_101, out_201), 3, name="feature_concat")
+
+        # conv dep-sep
+        i = i + 1
+        out_300 = self.build_conv("CNN%d" % (i), out3, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+                               
+        # conv atrous
+        i = i + 1
+        out_401 = self.build_conv("CNN%d" % (i), out_300, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+        # conv atrous
+        i = i + 1
+        out_402 = self.build_conv("CNN%d" % (i), out_401, 3, 3, 8, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
+                               
+        # conv atrous
+        i = i + 1
+        out_501 = self.build_conv_atrous("CNN%d" % (i), out_300, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2) 
+        # conv atrous
+        i = i + 1
+        out_502 = self.build_conv("CNN%d" % (i), out_501, 3, 3, 8, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+                               
+        # concat
+        out5 = tf.concat((out_402, out_502), 3, name="feature_concat") 
+        
+        # conv dep-sep
+        i = i + 1
+        out_500 = self.build_depthwise_separable_conv("CNN%d" % (i), out5, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)        
+        
+        # concat
+        out10 = tf.concat((out_300, out_500), 3, name="feature_concat") 
+        
+        # dimension reduction
+        # [1x1x24x16]  
+        out_ch_num = 32    
+        i = i + 1
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                      
+        
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+                               
+        # [3x3x16x8]
+        i = i + 1
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+                
+
+    '''
+    # Atrous convolutions to reduce Artifacts across 8x8 blocks
+    '''
+    def build_graph_v5_4_edge_concat(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out_1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+        # conv    
+        i = i + 1        
+        out_11 = self.build_conv("CNN%d" % (i), out_1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # conv atrous   
+        i = i + 1        
+        out_2 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2)
+                            
+        # conv atrous   
+        i = i + 1        
+        out_4 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)
+        
+        # conv atrous   
+        i = i + 1        
+        out_8 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=8)
+                                    
+        # concat
+        out_12 = tf.concat((out_11, out_2), 3, name="feature_concat") 
+        out_48 = tf.concat((out_4, out_8), 3, name="feature_concat")
+
+        # conv dep-sep
+        i = i + 1
+        out_100 = self.build_depthwise_separable_conv("CNN%d" % (i), out_12, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        # conv atrous
+        i = i + 1
+        out_101 = self.build_conv_atrous("CNN%d" % (i), out_100, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2) 
+                               
+        # conv dep-sep
+        i = i + 1
+        out_200 = self.build_depthwise_separable_conv("CNN%d" % (i), out_48, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+        # conv atrous                               
+        i = i + 1
+        out_201 = self.build_conv_atrous("CNN%d" % (i), out_200, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)  
+
+        # concat
+        out3 = tf.concat((out_101, out_201), 3, name="feature_concat")
+
+        # conv dep-sep
+        i = i + 1
+        out_300 = self.build_conv("CNN%d" % (i), out3, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+        # residual
+        #out_301 = out_300 + out_1
+        out_301 = tf.concat((out_300, out_11), 3, name="feature_concat")
+        
+        # conv dep-sep
+        i = i + 1
+        out_400 = self.build_depthwise_separable_conv("CNN%d" % (i), out_301, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+                               
+        # conv atrous
+        i = i + 1
+        out_401 = self.build_conv("CNN%d" % (i), out_400, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
+             
+        # conv atrous
+        i = i + 1
+        out_402 = self.build_conv_atrous("CNN%d" % (i), out_400, 3, 3, 16, 8, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2) 
+
+        # concat
+        out5 = tf.concat((out_401, out_402), 3, name="feature_concat") 
+        
+        # conv dep-sep
+        i = i + 1
+        out_500 = self.build_depthwise_separable_conv("CNN%d" % (i), out5, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)        
+        
+        # concat
+        out10 = tf.concat((out_300, out_500), 3, name="feature_concat") 
+        
+        # dimension reduction
+        # [1x1x24x16]  
+        out_ch_num = 32    
+        i = i + 1
+        out11 = self.build_depthwise_separable_conv("CNN%d" % (i), out10, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                      
+        
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out11
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out11, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+                               
+        # [3x3x16x8]
+        i = i + 1
+        out11 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+                
+                
 
     '''
     # Similar to v3 and inspired from v5
@@ -1106,12 +1572,12 @@ class SuperResolution(tf_graph.TensorflowGraph):
                                     
         # conv     
         i = i + 1
-        out2 = self.build_conv("CNN%d" % (i), out100, 1, 3, 8, 4, use_bias=True, activator=self.activator,
+        out2 = self.build_conv("CNN%d" % (i), out100, 3, 3, 8, 4, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                               
 
         # conv     
         i = i + 1
-        out3 = self.build_conv("CNN%d" % (i), out100, 3, 1, 8, 4, use_bias=True, activator=self.activator,
+        out3 = self.build_conv("CNN%d" % (i), out100, 3, 3, 8, 4, use_bias=True, activator=self.activator,
                                use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
                                                        
         # concat
@@ -2029,7 +2495,11 @@ class SuperResolution(tf_graph.TensorflowGraph):
         out4 = tf.concat((out4, out200), 3, name="feature_concat")   
               
         # conv dep-sep
-        out_ch_num = 8    
+        if self.scale == 2:
+            out_ch_num = 8    
+        elif self.scale == 4:
+            out_ch_num = 32
+        out_ch_num = 32
         i = i + 1
         out5 = self.build_depthwise_separable_conv("CNN%d" % (i), out4, 3, 3, 16, out_ch_num, use_bias=True, activator=self.activator,
                                     use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)         
@@ -2255,11 +2725,17 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif self.arch_type == "v4_edge_concat":
             self.build_graph_v4_edge_concat()        
         elif self.arch_type == "v5_edge_concat":
-            self.build_graph_v5_edge_concat()   
-        elif self.arch_type == "v5_1_edge_concat":
-            self.build_graph_v5_1_edge_concat()    
-        elif self.arch_type == "v5_2_edge_concat":
-            self.build_graph_v5_2_edge_concat()                
+            self.build_graph_v5_edge_concat()    
+        elif self.arch_type == "v5_rzn":
+            self.build_graph_v5_rzn()           
+        elif self.arch_type == "v5_rzn_l":
+            self.build_graph_v5_rzn_l()            
+        elif self.arch_type == "v5_rzn_ul":
+            self.build_graph_v5_rzn_ul()                             
+        elif self.arch_type == "v5_3_edge_concat":
+            self.build_graph_v5_3_edge_concat()    
+        elif self.arch_type == "v5_4_edge_concat":
+            self.build_graph_v5_4_edge_concat()               
         elif self.arch_type == "v6_edge_concat":
             self.build_graph_v6_edge_concat()  
         elif self.arch_type == "v6_1_edge_concat":
