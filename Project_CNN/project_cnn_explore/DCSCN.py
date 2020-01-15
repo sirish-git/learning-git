@@ -75,6 +75,18 @@ class SuperResolution(tf_graph.TensorflowGraph):
         # warm_up lr params
         self.warm_up = flags.warm_up
         self.warm_up_lr = flags.warm_up_lr
+        # restart lr params
+        self.restart_lr_cnt = flags.restart_lr_cnt
+        if flags.restart_lr_cnt > 0:
+            # override actual lr decay
+            self.lr_decay_epoch = flags.restart_lr_decay_epoch
+            self.restart_lr_decay_epoch = flags.restart_lr_decay_epoch
+            self.restart_lr_threshold = flags.restart_lr_threshold
+            if flags.restart_lr == 0.0:
+                # init with initial lr
+                self.restart_lr = flags.initial_lr * 0.5
+            else:
+                self.restart_lr = flags.restart_lr
         # number of batches with given train images, batch_num and warmp epochs
         batch_cnt_epoch = (flags.training_images / flags.batch_num) * flags.warm_up_epochs
         self.warm_up_lr_step = (self.initial_lr - self.warm_up_lr) / batch_cnt_epoch
@@ -2939,6 +2951,16 @@ class SuperResolution(tf_graph.TensorflowGraph):
             # set new learning rate
             self.lr *= self.lr_decay
             self.epochs_completed_in_stage = 0
+            # restart lr logic
+            if self.restart_lr_cnt > 0:
+                if self.lr < self.restart_lr_threshold:
+                    self.restart_lr_cnt -= 1            
+                    # reduce threshold by 0.75
+                    self.restart_lr_threshold *= 0.4
+                    self.lr = self.lr * 6 #self.restart_lr       
+                    self.restart_lr *= 0.75                    
+                    logging.info("\n Learning rate restarted... ")
+                    logging.info("\n New lr: {}, Next lr threshold: {}".format(self.lr, self.restart_lr_threshold))
             return True
         else:
             return False
