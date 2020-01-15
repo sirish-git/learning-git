@@ -197,14 +197,24 @@ def compress_with_jpeg(true_image, compress_input_q, scale, resampling_method):
     
     # compress LR RGB image: Encode and decode
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_input_q]
-    ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
+    test_scale = 1
+    if scale == test_scale:
+        #logging.info("/n To match SOTA values for JPEG: 1st:color-conversion, 2nd:compression")
+        # first convert to y
+        input_y_image = convert_rgb_to_y(image_lr_rgb)
+        # compress and decompress y
+        ret, enc_img = cv2.imencode('.jpg', input_y_image, encode_param)
+        input_y_image = cv2.imdecode(enc_img, 0)
+    else:
+        ret, enc_img = cv2.imencode('.jpg', image_lr_rgb, encode_param)
     if len(true_image.shape) == 3 and true_image.shape[2] == 3:
         # color image decoding
         dec_img = cv2.imdecode(enc_img, 1)
         
         # convert compressed LR RGB to YUV
         image_lr_yuv = convert_rgb_to_ycbcr(dec_img)
-        input_y_image = image_lr_yuv[:,:,0:1]
+        if scale != test_scale:
+            input_y_image = image_lr_yuv[:,:,0:1]
         u_lr = image_lr_yuv[:,:,1:2]
         v_lr = image_lr_yuv[:,:,2:3]
     

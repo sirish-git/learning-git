@@ -66,6 +66,17 @@ flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current l
 flags.DEFINE_integer("warm_up", 0, "Enable warmup learning at start of training.")
 flags.DEFINE_float("warm_up_lr", 0.0002, "Initial warmpup learning rate to make smaller steps @each batch towards optimal")
 flags.DEFINE_integer("warm_up_epochs", 5, "Number of epochs for warmpup learning at start of the training.")
+# Restrat learning rate
+flags.DEFINE_integer("restart_lr_cnt", 0, "Number of times to start the lr in whole training.")
+flags.DEFINE_integer("restart_lr_decay_epoch", 10, "override actual lr_decay, learning rate will be decayed by lr_decay.")
+flags.DEFINE_float("restart_lr_threshold", 0.0002, "restart learning rate when lr reaches below this threshold till restart count is non-zero, reduce threshold by 75%")
+flags.DEFINE_float("restart_lr", 0.000, "restart learning rate by reducing by 50% from initial lr")
+# Cyclical Learning Rate (CLR) # Feature is not yet supported
+flags.DEFINE_integer("clr", 0, "Enable clr at start of training.")
+flags.DEFINE_float("clr_base_lr", 0.0001, "minimum learning rate to make smaller steps @each batch towards optimal")
+flags.DEFINE_float("clr_max_lr", 0.002, "maximum learning rate to make smaller steps @each batch towards optimal")
+flags.DEFINE_integer("clr_step_size", 2000, "Number of steps to complete a half cycle.")
+flags.DEFINE_float("clr_decay", 0.75, "Learning rate (max_lr) decay after a cycle.")
                                    
 # Dataset or Others
 flags.DEFINE_integer("compress_input_q", 0, "compress the inputs to handle SR for compressed inputs, specify the JPEG quality level")
