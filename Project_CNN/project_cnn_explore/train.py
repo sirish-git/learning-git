@@ -145,7 +145,7 @@ def train(model, flags, trial):
             model.save_model(trial=trial, output_log=True)
                 
             # save best model based on ssim
-            if FLAGS.compress_input_q > 1:
+            if FLAGS.compress_input_q > 1 and FLAGS.scale > 1:
                 # best rgb ssim
                 if ssim_rgb > ssim_best1:
                     ssim_best1 = ssim_rgb
@@ -159,7 +159,7 @@ def train(model, flags, trial):
                     epoch_best1_ssim = model.epochs_completed
             
             # save best model based on psnr
-            if FLAGS.compress_input_q > 1:
+            if FLAGS.compress_input_q > 1 and FLAGS.scale > 1:
                 # best rgb psnr
                 if psnr_rgb > psnr_best2:
                     ssim_best2 = ssim_rgb

@@ -53,7 +53,8 @@ class TensorflowGraph(tf.Graph):
         self.log_weight_image_num = 32
         self.debug_print = flags.debug_print
 
-        # Environment (all directory name should not contain '/' after )       
+        # Environment (all directory name should not contain '/' after )    
+        self.compress_q = flags.compress_input_q
         if flags.compress_input_q > 0:
             self.checkpoint_dir = flags.checkpoint_dir + "/" + "train_on_compressed" + "/" + "{}x".format(flags.scale) + "/"
         else:
@@ -83,8 +84,13 @@ class TensorflowGraph(tf.Graph):
         self.init_session(flags.gpu_device_id)
 
     def create_checkpoint_dir(self, scale): 
-        self.checkpoint_dir = self.checkpoint_dir +  "_{}x_".format(scale) + "MAC-{}_".format(self.complexity_conv) + \
-                              "{}".format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        if scale==1 and self.compress_q > 0:
+            # Append compression Quant param to model dir name
+            self.checkpoint_dir = self.checkpoint_dir +  "_{}x_".format(scale) + "Q{}_".format(self.compress_q) + "MAC-{}_".format(self.complexity_conv) + \
+                                "{}".format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))        
+        else:
+            self.checkpoint_dir = self.checkpoint_dir +  "_{}x_".format(scale) + "MAC-{}_".format(self.complexity_conv) + \
+                                "{}".format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         util.make_dir(self.checkpoint_dir)
         
         # get all the code and training scripts corresponding to this model
