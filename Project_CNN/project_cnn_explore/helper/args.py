@@ -60,7 +60,7 @@ flags.DEFINE_boolean("use_l1_loss", False, "Use L1 Error as loss function instea
 flags.DEFINE_float("initial_lr", 0.002, "Initial learning rate")
 flags.DEFINE_float("lr_decay", 0.75, "Learning rate decay rate")
 flags.DEFINE_integer("lr_decay_epoch", 10, "After this epochs are completed, learning rate will be decayed by lr_decay.")
-flags.DEFINE_float("end_lr", 2e-5, "Training end learning rate. If the current learning rate gets lower than this"
+flags.DEFINE_float("end_lr", 1e-5, "Training end learning rate. If the current learning rate gets lower than this"
                                    "value, then training will be finished.")
 # warmup learning rate                                   
 flags.DEFINE_integer("warm_up", 0, "Enable warmup learning at start of training.")

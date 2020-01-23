@@ -1409,6 +1409,145 @@ class SuperResolution(tf_graph.TensorflowGraph):
     '''
     # Atrous convolutions to reduce Artifacts across 8x8 blocks
     '''
+    def build_graph_v5_car(self):
+
+        self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
+        self.y = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="y")
+        self.x2 = tf.placeholder(tf.float32, shape=[None, None, None, self.output_channels], name="x2")
+        self.dropout = tf.placeholder(tf.float32, shape=[], name="dropout_keep_rate")
+        self.is_training = tf.placeholder(tf.bool, name="is_training")
+
+        # building feature extraction layers
+
+        output_feature_num = self.filters
+        total_output_feature_num = 0
+        input_feature_num = self.channels
+        input_tensor = self.x
+		
+        # custom architecture
+        i = 0	
+
+        if self.save_weights:
+            with tf.name_scope("X"):
+                util.add_summaries("output", self.name, self.x, save_stddev=True, save_mean=True)
+
+        # conv    
+        i = i + 1        
+        out_1 = self.build_conv("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+        # conv    
+        i = i + 1        
+        out_1_5x5 = self.build_conv("CNN%d" % (i), input_tensor, 5, 5, input_feature_num, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                
+                               
+        # conv atrous   
+        i = i + 1        
+        out_2 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2)
+        # conv atrous   
+        i = i + 1        
+        out_2_5x5 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 5, 5, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2)
+                            
+        # conv atrous   
+        i = i + 1        
+        out_4 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)
+        
+        # conv atrous   
+        i = i + 1        
+        out_8 = self.build_conv_atrous("CNN%d" % (i), input_tensor, 3, 3, input_feature_num, 16, use_bias=True, activator=self.activator,
+                            use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=8)
+                                    
+        # concat
+        out_1_1 = tf.concat((out_1, out_1_5x5), 3, name="feature_concat") 
+        out_2_1 = tf.concat((out_2, out_2_5x5), 3, name="feature_concat") 
+        out_48 = tf.concat((out_4, out_8), 3, name="feature_concat")
+
+        # conv dep-sep
+        i = i + 1
+        out_100 = self.build_depthwise_separable_conv("CNN%d" % (i), out_1_1, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                 
+        # spatial attention   
+        i = i + 1        
+        out_100_1 = self.spatial_attention("CNN%d" % (i), out_100, 1, 1, 16, 16, use_bias=True, activator=self.activator)                               
+        # conv atrous
+        i = i + 1
+        out_101 = self.build_conv("CNN%d" % (i), out_100_1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate) 
+
+        # conv dep-sep
+        i = i + 1
+        out_200 = self.build_depthwise_separable_conv("CNN%d" % (i), out_2_1, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                 
+        # spatial attention   
+        i = i + 1        
+        out_200_1 = self.spatial_attention("CNN%d" % (i), out_200, 1, 1, 16, 16, use_bias=True, activator=self.activator)                               
+        # conv atrous
+        i = i + 1
+        out_201 = self.build_conv_atrous("CNN%d" % (i), out_200_1, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=2) 
+                               
+        # conv dep-sep
+        i = i + 1
+        out_48_1 = self.build_depthwise_separable_conv("CNN%d" % (i), out_48, 3, 3, 32, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)   
+        # spatial attention   
+        i = i + 1        
+        out_48_2 = self.spatial_attention("CNN%d" % (i), out_48_1, 1, 1, 16, 16, use_bias=True, activator=self.activator)                               
+        # conv atrous                               
+        i = i + 1
+        out_48_3 = self.build_conv_atrous("CNN%d" % (i), out_48_2, 3, 3, 16, 16, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate, dilate_stride=4)  
+
+        # concat
+        out3 = tf.concat((out_201, out_48_3), 3, name="feature_concat")
+        # conv dep-sep     
+        i = i + 1
+        out_ch_num = 16
+        out4 = self.build_depthwise_separable_conv("CNN%d" % (i), out3, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)          
+        # spatial attention   
+        i = i + 1        
+        out5 = self.spatial_attention("CNN%d" % (i), out4, 1, 1, out_ch_num, out_ch_num, use_bias=True, activator=self.activator) 
+        
+        # concat
+        out6 = tf.concat((out_101, out5), 3, name="feature_concat")
+        
+        # conv dep-sep 
+        out_ch_num = 32    
+        i = i + 1
+        out10 = self.build_depthwise_separable_conv("CNN%d" % (i), out6, 3, 3, 32, out_ch_num, use_bias=True, activator=self.activator,
+                                    use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)                                    
+        
+        # building upsampling layer
+        if self.scale == 1:
+            # for AR network
+            out12 = out10
+        else:
+            # for SR network        
+            out12 = tf.depth_to_space(out10, self.scale)
+        #update input pixels after calling depth to space
+        self.pix_per_input = self.scale
+        
+        # compute the channels appropriately based on scale and depth2space        
+        inp_ch_num = out_ch_num // (self.scale * self.scale)        
+                               
+        # conv
+        i = i + 1
+        out13 = self.build_conv("CNN%d" % (i), out12, 3, 3, inp_ch_num, 1, use_bias=True, activator=self.activator,
+                               use_batch_norm=self.batch_norm, dropout_rate=self.dropout_rate)  
+
+        # global residual
+        self.y_ = tf.add(self.H[-1], self.x2, name="output")
+
+        if self.save_weights:
+            with tf.name_scope("Y_"):
+                util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
+                
+    '''
+    # Atrous convolutions to reduce Artifacts across 8x8 blocks
+    '''
     def build_graph_v5_4_edge_concat(self):
 
         self.x = tf.placeholder(tf.float32, shape=[None, None, None, self.channels], name="x")
@@ -1545,8 +1684,8 @@ class SuperResolution(tf_graph.TensorflowGraph):
         if self.save_weights:
             with tf.name_scope("Y_"):
                 util.add_summaries("output", self.name, self.y_, save_stddev=True, save_mean=True)	        
-                
-                
+ 
+ 
 
     '''
     # Similar to v3 and inspired from v5
@@ -2747,7 +2886,9 @@ class SuperResolution(tf_graph.TensorflowGraph):
         elif self.arch_type == "v5_3_edge_concat":
             self.build_graph_v5_3_edge_concat()    
         elif self.arch_type == "v5_4_edge_concat":
-            self.build_graph_v5_4_edge_concat()               
+            self.build_graph_v5_4_edge_concat()   
+        elif self.arch_type == "v5_car":
+            self.build_graph_v5_car()               
         elif self.arch_type == "v6_edge_concat":
             self.build_graph_v6_edge_concat()  
         elif self.arch_type == "v6_1_edge_concat":

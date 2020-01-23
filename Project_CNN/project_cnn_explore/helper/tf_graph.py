@@ -415,6 +415,71 @@ class TensorflowGraph(tf.Graph):
         except OSError as e:
             print(e)
             print("NG: tensorboard log archived to [%s]." % model_archive_directory)
+            
+    def build_conv_attn(self, name, x, k_w, k_h, in_filters, out_filters, use_bias=False, activator="relu", strides=1):
+    
+        with tf.variable_scope(name):
+            n= 1 / (k_w * k_h * in_filters) #np.sqrt(k_w * k_h * in_filters)
+            kernel = tf.get_variable('filter', [k_w, k_h, in_filters, out_filters],tf.float32, initializer=tf.random_uniform_initializer(minval = -n, maxval = n))
+            bias = tf.get_variable('bias',[out_filters],tf.float32, initializer=tf.random_uniform_initializer(minval = -n, maxval = n))
+            
+            h = tf.nn.conv2d(x, kernel, [1,strides,strides,1], padding='SAME') + bias
+            
+            if activator is not None:
+                h = self.build_activator(h, out_filters, activator, base_name=name)
+            
+        return h
+            
+            
+    def channel_attention(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
+                        activator=None):
+        i = 0
+        with tf.variable_scope(name):
+            # Global average pooling in 
+            #c = input_tensor.get_shape()[-1]
+            out = tf.reshape(tf.reduce_mean(input_tensor, axis=[1, 2]), (-1, 1, 1, input_feature_num))
+            temp_tensor = tf.reduce_mean(input_tensor, axis=[1, 2])
+            print("temp_tensor.shape:{}, out.shape:{}".format(temp_tensor.shape, out.shape))
+            
+            # conv    
+            i = i + 1        
+            #out1 = self.build_conv_attn("CNN%d" % (i), out, k_w, k_h, input_feature_num, output_feature_num, use_bias=use_bias, activator="relu")                
+            out1 = self.build_conv("CNN%d" % (i), out, k_w, k_h, input_feature_num, output_feature_num, use_bias=use_bias, activator="relu")                
+            # conv    
+            i = i + 1        
+            #out2 = self.build_conv_attn("CNN%d" % (i), out1, k_w, k_h, input_feature_num, output_feature_num, use_bias=use_bias, activator="sigmoid")                
+            out2 = self.build_conv("CNN%d" % (i), out1, k_w, k_h, input_feature_num, output_feature_num, use_bias=use_bias, activator="sigmoid")                
+            # channel-wise multiplication
+            out3 = tf.multiply(input_tensor, out2)
+            
+        return out3
+        
+    def spatial_attention(self, name, input_tensor, k_w, k_h, input_feature_num, output_feature_num, use_bias=False,
+                        activator=None):
+        i = 0
+        k_w = 7
+        k_h = 7
+        kernel_initializer = tf.contrib.layers.variance_scaling_initializer()
+        with tf.variable_scope(name):
+            # Global average pooling in 
+            avg_pool = tf.reduce_mean(input_tensor, axis=[3], keepdims=True)
+            max_pool = tf.reduce_max(input_tensor, axis=[3], keepdims=True)
+            concat = tf.concat([avg_pool, max_pool], 3)
+            
+            out1 = tf.layers.conv2d(concat,
+                                    filters=1,
+                                    kernel_size=[k_w, k_h],
+                                    strides=[1,1],
+                                    padding="same",
+                                    activation=None,
+                                    kernel_initializer=kernel_initializer,
+                                    use_bias=False,
+                                    name='conv')   
+            out2 = tf.sigmoid(out1, 'sigmoid')
+            # spatial-wise multiplication
+            out3 = tf.multiply(input_tensor, out2)
+            
+        return out3        
 
     def load_model(self, name="", trial=0, output_log=False):
         if name == "" or name == "default":
