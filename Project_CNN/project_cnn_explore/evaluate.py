@@ -71,7 +71,9 @@ def main(not_parsed_args):
         elif FLAGS.arch_type == "v5_3_edge_concat":
             model.build_graph_v5_3_edge_concat()        
         elif FLAGS.arch_type == "v5_4_edge_concat":
-            model.build_graph_v5_4_edge_concat()              
+            model.build_graph_v5_4_edge_concat()    
+        elif FLAGS.arch_type == "v5_car":
+            model.build_graph_v5_car()              
         elif FLAGS.arch_type == "v6_edge_concat":
             model.build_graph_v6_edge_concat()    
         elif FLAGS.arch_type == "v6_1_edge_concat":
