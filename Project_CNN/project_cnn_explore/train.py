@@ -81,11 +81,12 @@ def train(model, flags, trial):
     model.print_status(flags.test_dataset, psnr, ssim, psnr_rgb, ssim_rgb, log=True)
     model.log_to_tensorboard(test_filenames[0], psnr, save_meta_data=True)
 
-    # Bicubic results evaluation
+    # JPEG/Bicubic results evaluation
     if model.scale == 1:
         logging.info("JPEG Compression Results")        
     else:
         logging.info("Bicubic Upscaling Results")
+    # Results of evaluation data sets
     eval_set_files = {}    
     if FLAGS.eval_tests_while_train:
         logging.info("eval_tests_while_train: {}".format(FLAGS.eval_tests_while_train))        
@@ -107,6 +108,22 @@ def train(model, flags, trial):
                 #print("psnr_Y:{:.3f}, ssim_Y:{:.4f}, psnr_rgb:{:.3f}, ssim_rgb:{:.4f}, filename: {}".format(psnr_Y, ssim_Y, psnr_rgb, ssim_rgb, filename))
             logging.info("{:16s}: psnr_Y={:.3f}, ssim_Y={:.4f}, psnr_RGB={:.3f}, ssim_RGB={:.4f} #file_cnt: {}".format(test_set, avg_psnr_Y/file_cnt, avg_ssim_Y/file_cnt, avg_psnr_rgb/file_cnt, avg_ssim_rgb/file_cnt, file_cnt))           
 
+    # Results of test datasets
+    logging.info("test_dataset: {}".format(FLAGS.test_dataset))               
+    test_files = util.get_files_in_directory(flags.data_dir + "/" + FLAGS.test_dataset)    
+    # bicubic evaluation
+    avg_psnr_Y = avg_ssim_Y = avg_psnr_rgb = avg_ssim_rgb = 0
+    file_cnt = 0
+    for filename in test_files:
+        file_cnt += 1
+        psnr_Y, ssim_Y, psnr_rgb, ssim_rgb = model.evaluate_bicubic(filename)
+        avg_psnr_Y += psnr_Y
+        avg_ssim_Y += ssim_Y
+        avg_psnr_rgb += psnr_rgb
+        avg_ssim_rgb += ssim_rgb                
+        #print("psnr_Y:{:.3f}, ssim_Y:{:.4f}, psnr_rgb:{:.3f}, ssim_rgb:{:.4f}, filename: {}".format(psnr_Y, ssim_Y, psnr_rgb, ssim_rgb, filename))
+    logging.info("{:16s}: psnr_Y={:.3f}, ssim_Y={:.4f}, psnr_RGB={:.3f}, ssim_RGB={:.4f} #file_cnt: {}".format(FLAGS.test_dataset, avg_psnr_Y/file_cnt, avg_ssim_Y/file_cnt, avg_psnr_rgb/file_cnt, avg_ssim_rgb/file_cnt, file_cnt))           
+        
     # Training loop
     logging.info("\n Complexity_Conv: #MAC={}".format(model.complexity_conv))
     logging.info("\nIn Training Loop ...")
