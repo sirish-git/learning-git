@@ -23,9 +23,9 @@
  
  Change directory:
  
- cd/ : to move to root directory
- cd~ : to move to our home directory 
- cd- : to go to previously visited directory
+ cd / : to move to root directory
+ cd ~ : to move to our home directory 
+ cd - : to go to previously visited directory
 
 
  view files:
